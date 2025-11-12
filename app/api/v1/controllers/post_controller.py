@@ -2,14 +2,11 @@ from app.schemas.post_schema import (
     CreatePostRequest,
     UpdatePostRequest,
     PostResponse,
-    PostListResponse
+    PostListResponse,
 )
 from app.models.post_model import PostModel
 from app.models.user_model import UserModel
-from app.core.exceptions import (
-    NotFoundException,
-    UnauthorizedException
-)
+from app.common.exceptions import NotFoundException, UnauthorizedException
 
 
 class PostController:
@@ -43,7 +40,7 @@ class PostController:
             title=request.title,
             content=request.content,
             author_id=request.author_id,
-            img_url=request.img_url
+            img_url=request.img_url,
         )
         return PostResponse.model_validate(post)
 
@@ -106,7 +103,7 @@ class PostController:
             post_id=post_id,
             title=request.title,
             content=request.content,
-            img_url=request.img_url
+            img_url=request.img_url,
         )
 
         return PostResponse.model_validate(updated_post)
