@@ -3,8 +3,9 @@ from app.schemas.post_schema import (
     UpdatePostRequest,
     PostResponse,
     PostListResponse,
+    PostStatusResponse,
 )
-from app.models.post_model import PostModel
+from app.models.post_model import PostModel, Post
 from app.models.user_model import UserModel
 from app.common.exceptions import NotFoundException, UnauthorizedException
 
@@ -15,6 +16,31 @@ class PostController:
     def __init__(self, user_model: UserModel = None):
         self.post_model = PostModel()
         self.user_model = user_model if user_model else UserModel()
+
+    def _convert_to_response(self, post: Post) -> PostResponse:
+        """Post 객체를 PostResponse로 변환
+
+        Args:
+            post: Post 모델 객체
+
+        Returns:
+            PostResponse: 변환된 응답 객체
+        """
+        return PostResponse(
+            id=post.id,
+            title=post.title,
+            content=post.content,
+            author_id=post.author_id,
+            img_url=post.img_url,
+            status=PostStatusResponse(
+                view_count=post.view_count,
+                like_count=post.like_count,
+                comment_count=post.comment_count
+            ),
+            del_yn=post.del_yn,
+            created_at=post.created_at,
+            comments=[]
+        )
 
     def create_post(self, request: CreatePostRequest) -> PostResponse:
         """게시글 등록
@@ -42,7 +68,7 @@ class PostController:
             author_id=request.author_id,
             img_url=request.img_url,
         )
-        return PostResponse.model_validate(post)
+        return self._convert_to_response(post)
 
     def get_posts(self) -> PostListResponse:
         """게시글 목록 조회
@@ -51,7 +77,7 @@ class PostController:
             PostListResponse: 게시글 목록 및 총 개수
         """
         posts = self.post_model.get_all()
-        post_responses = [PostResponse.model_validate(post) for post in posts]
+        post_responses = [self._convert_to_response(post) for post in posts]
         return PostListResponse(posts=post_responses, total=len(post_responses))
 
     def get_post(self, post_id: int) -> PostResponse:
@@ -72,7 +98,7 @@ class PostController:
 
         self.post_model.increase_view_count(post_id)
 
-        return PostResponse.model_validate(post)
+        return self._convert_to_response(post)
 
     def update_post(self, post_id: int, request: UpdatePostRequest) -> PostResponse:
         """게시글 수정 (작성자만 가능)
@@ -106,7 +132,7 @@ class PostController:
             img_url=request.img_url,
         )
 
-        return PostResponse.model_validate(updated_post)
+        return self._convert_to_response(updated_post)
 
     def delete_post(self, post_id: int, author_id: int) -> dict:
         """게시글 삭제 (작성자만 가능)
@@ -153,7 +179,7 @@ class PostController:
 
         self.post_model.increase_like_count(post_id)
 
-        return PostResponse.model_validate(post)
+        return self._convert_to_response(post)
 
     def unlike_post(self, post_id: int) -> PostResponse:
         """게시글 좋아요 감소
@@ -173,7 +199,7 @@ class PostController:
 
         self.post_model.decrease_like_count(post_id)
 
-        return PostResponse.model_validate(post)
+        return self._convert_to_response(post)
 
     def add_comment(self, post_id: int) -> PostResponse:
         """게시글 댓글 수 증가
@@ -193,7 +219,7 @@ class PostController:
 
         self.post_model.increase_comment_count(post_id)
 
-        return PostResponse.model_validate(post)
+        return self._convert_to_response(post)
 
     def remove_comment(self, post_id: int) -> PostResponse:
         """게시글 댓글 수 감소
@@ -213,4 +239,4 @@ class PostController:
 
         self.post_model.decrease_comment_count(post_id)
 
-        return PostResponse.model_validate(post)
+        return self._convert_to_response(post)
