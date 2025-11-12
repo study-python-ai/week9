@@ -4,7 +4,7 @@ from app.schemas.post_schema import (
     CreatePostRequest,
     UpdatePostRequest,
     PostResponse,
-    PostListResponse
+    PostListResponse,
 )
 
 router = APIRouter(prefix="/api/v1/posts", tags=["posts"])
@@ -22,7 +22,7 @@ def get_post_controller() -> PostController:
 @router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
 async def create_post(
     request: CreatePostRequest,
-    controller: PostController = Depends(get_post_controller)
+    controller: PostController = Depends(get_post_controller),
 ):
     """게시글 등록
 
@@ -44,9 +44,7 @@ async def create_post(
 
 
 @router.get("", response_model=PostListResponse, status_code=status.HTTP_200_OK)
-async def get_posts(
-    controller: PostController = Depends(get_post_controller)
-):
+async def get_posts(controller: PostController = Depends(get_post_controller)):
     """게시글 목록 조회
 
     삭제되지 않은 모든 게시글을 조회합니다.
@@ -62,8 +60,7 @@ async def get_posts(
 
 @router.get("/{post_id}", response_model=PostResponse, status_code=status.HTTP_200_OK)
 async def get_post(
-    post_id: int,
-    controller: PostController = Depends(get_post_controller)
+    post_id: int, controller: PostController = Depends(get_post_controller)
 ):
     """게시글 상세 조회
 
@@ -86,7 +83,7 @@ async def get_post(
 async def update_post(
     post_id: int,
     request: UpdatePostRequest,
-    controller: PostController = Depends(get_post_controller)
+    controller: PostController = Depends(get_post_controller),
 ):
     """게시글 수정
 
@@ -115,7 +112,7 @@ async def update_post(
 async def delete_post(
     post_id: int,
     author_id: int,
-    controller: PostController = Depends(get_post_controller)
+    controller: PostController = Depends(get_post_controller),
 ):
     """게시글 삭제
 
@@ -135,3 +132,91 @@ async def delete_post(
         UnauthorizedException: 작성자가 아닌 경우
     """
     return controller.delete_post(post_id, author_id)
+
+
+@router.post("/{post_id}/like", response_model=PostResponse, status_code=status.HTTP_200_OK)
+async def like_post(
+    post_id: int,
+    controller: PostController = Depends(get_post_controller),
+):
+    """게시글 좋아요
+
+    게시글의 좋아요 수를 1 증가시킵니다.
+
+    Args:
+        post_id: 게시글 ID
+        controller: 게시글 컨트롤러 (의존성 주입)
+
+    Returns:
+        PostResponse: 좋아요 수가 증가된 게시글 정보
+
+    Raises:
+        NotFoundException: 게시글을 찾을 수 없는 경우
+    """
+    return controller.like_post(post_id)
+
+
+@router.delete("/{post_id}/like", response_model=PostResponse, status_code=status.HTTP_200_OK)
+async def unlike_post(
+    post_id: int,
+    controller: PostController = Depends(get_post_controller),
+):
+    """게시글 좋아요 취소
+
+    게시글의 좋아요 수를 1 감소시킵니다.
+
+    Args:
+        post_id: 게시글 ID
+        controller: 게시글 컨트롤러 (의존성 주입)
+
+    Returns:
+        PostResponse: 좋아요 수가 감소된 게시글 정보
+
+    Raises:
+        NotFoundException: 게시글을 찾을 수 없는 경우
+    """
+    return controller.unlike_post(post_id)
+
+
+@router.post("/{post_id}/comment", response_model=PostResponse, status_code=status.HTTP_200_OK)
+async def add_comment(
+    post_id: int,
+    controller: PostController = Depends(get_post_controller),
+):
+    """댓글 추가 (댓글 수 증가)
+
+    게시글의 댓글 수를 1 증가시킵니다.
+
+    Args:
+        post_id: 게시글 ID
+        controller: 게시글 컨트롤러 (의존성 주입)
+
+    Returns:
+        PostResponse: 댓글 수가 증가된 게시글 정보
+
+    Raises:
+        NotFoundException: 게시글을 찾을 수 없는 경우
+    """
+    return controller.add_comment(post_id)
+
+
+@router.delete("/{post_id}/comment", response_model=PostResponse, status_code=status.HTTP_200_OK)
+async def remove_comment(
+    post_id: int,
+    controller: PostController = Depends(get_post_controller),
+):
+    """댓글 삭제 (댓글 수 감소)
+
+    게시글의 댓글 수를 1 감소시킵니다.
+
+    Args:
+        post_id: 게시글 ID
+        controller: 게시글 컨트롤러 (의존성 주입)
+
+    Returns:
+        PostResponse: 댓글 수가 감소된 게시글 정보
+
+    Raises:
+        NotFoundException: 게시글을 찾을 수 없는 경우
+    """
+    return controller.remove_comment(post_id)
