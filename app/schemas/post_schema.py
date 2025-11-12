@@ -60,18 +60,49 @@ class UpdatePostRequest(BaseModel):
         }
 
 
+class PostStatusResponse(BaseModel):
+    """게시글 통계 정보 DTO"""
+    view_count: int = 0
+    like_count: int = 0
+    comment_count: int = 0
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "view_count": 42,
+                "like_count": 10,
+                "comment_count": 5
+            }
+        }
+
+
+class CommentResponse(BaseModel):
+    """댓글 응답 DTO"""
+    id: int
+    img_url: Optional[str] = None
+    content: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "img_url": "https://example.com/profile.jpg",
+                "content": "댓글 내용입니다."
+            }
+        }
+
+
 class PostResponse(BaseModel):
-    """게시글 응답 DTO"""
+    """게시글 응답 DTO (상세 조회용)"""
     id: int
     title: str
     content: str
     author_id: int
     img_url: Optional[str] = None
-    view_count: int
-    like_count: int
-    comment_count: int
+    status: PostStatusResponse
     del_yn: str
     created_at: str
+    comments: List[CommentResponse] = []
 
     class Config:
         from_attributes = True
@@ -82,11 +113,20 @@ class PostResponse(BaseModel):
                 "content": "FastAPI로 게시판을 만들어봅시다.",
                 "author_id": 1,
                 "img_url": "https://example.com/image.jpg",
-                "view_count": 42,
-                "like_count": 10,
-                "comment_count": 5,
+                "status": {
+                    "view_count": 42,
+                    "like_count": 10,
+                    "comment_count": 5
+                },
                 "del_yn": "N",
-                "created_at": "2025-01-13T10:30:00"
+                "created_at": "2025-01-13T10:30:00",
+                "comments": [
+                    {
+                        "id": 1,
+                        "img_url": "https://example.com/profile.jpg",
+                        "content": "첫 번째 댓글입니다."
+                    }
+                ]
             }
         }
 
@@ -106,11 +146,14 @@ class PostListResponse(BaseModel):
                         "content": "내용...",
                         "author_id": 1,
                         "img_url": None,
-                        "view_count": 10,
-                        "like_count": 2,
-                        "comment_count": 0,
+                        "status": {
+                            "view_count": 10,
+                            "like_count": 2,
+                            "comment_count": 0
+                        },
                         "del_yn": "N",
-                        "created_at": "2025-01-13T10:30:00"
+                        "created_at": "2025-01-13T10:30:00",
+                        "comments": []
                     }
                 ],
                 "total": 1
