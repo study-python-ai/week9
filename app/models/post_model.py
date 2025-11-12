@@ -38,7 +38,7 @@ class PostModel:
         post = Post(
             id=self._next_id,
             title=title,
-            content=content,
+        content=content,
             author_id=author_id,
             img_url=img_url
         )
@@ -86,6 +86,44 @@ class PostModel:
             return False
 
         post.view_count += 1
+        return True
+
+    def increase_like_count(self, post_id: int) -> bool:
+        """좋아요 수 증가"""
+        post = self.find_by_id(post_id)
+        if not post:
+            return False
+
+        post.like_count += 1
+        return True
+
+    def decrease_like_count(self, post_id: int) -> bool:
+        """좋아요 수 감소 (최소 0)"""
+        post = self.find_by_id(post_id)
+        if not post:
+            return False
+
+        if post.like_count > 0:
+            post.like_count -= 1
+        return True
+
+    def increase_comment_count(self, post_id: int) -> bool:
+        """댓글 수 증가"""
+        post = self.find_by_id(post_id)
+        if not post:
+            return False
+
+        post.comment_count += 1
+        return True
+
+    def decrease_comment_count(self, post_id: int) -> bool:
+        """댓글 수 감소 (최소 0)"""
+        post = self.find_by_id(post_id)
+        if not post:
+            return False
+
+        if post.comment_count > 0:
+            post.comment_count -= 1
         return True
 
     def get_by_author(self, author_id: int) -> List[Post]:
