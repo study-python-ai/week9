@@ -1,0 +1,139 @@
+from app.schemas.post_schema import (
+    CreatePostRequest,
+    UpdatePostRequest,
+    PostResponse,
+    PostListResponse
+)
+from app.models.post_model import PostModel
+from app.models.user_model import UserModel
+from app.core.exceptions import (
+    NotFoundException,
+    UnauthorizedException
+)
+
+
+class PostController:
+    """게시글 관련 비즈니스 로직 처리"""
+
+    def __init__(self, user_model: UserModel = None):
+        self.post_model = PostModel()
+        self.user_model = user_model if user_model else UserModel()
+
+    def create_post(self, request: CreatePostRequest) -> PostResponse:
+        """게시글 등록
+
+        Args:
+            request: 게시글 등록 요청 정보
+                - title: 게시글 제목
+                - content: 게시글 내용
+                - author_id: 작성자 ID
+                - img_url: 이미지 URL (선택)
+
+        Returns:
+            PostResponse: 생성된 게시글 정보
+
+        Raises:
+            NotFoundException: 작성자(author_id)가 존재하지 않는 경우
+        """
+        author = self.user_model.find_by_id(request.author_id)
+        if not author:
+            raise NotFoundException("존재하지 않는 사용자입니다.")
+
+        post = self.post_model.create(
+            title=request.title,
+            content=request.content,
+            author_id=request.author_id,
+            img_url=request.img_url
+        )
+        return PostResponse.model_validate(post)
+
+    def get_posts(self) -> PostListResponse:
+        """게시글 목록 조회
+
+        Returns:
+            PostListResponse: 게시글 목록 및 총 개수
+        """
+        posts = self.post_model.get_all()
+        post_responses = [PostResponse.model_validate(post) for post in posts]
+        return PostListResponse(posts=post_responses, total=len(post_responses))
+
+    def get_post(self, post_id: int) -> PostResponse:
+        """게시글 상세 조회 (조회수 증가)
+
+        Args:
+            post_id: 게시글 ID
+
+        Returns:
+            PostResponse: 게시글 정보
+
+        Raises:
+            NotFoundException: 게시글을 찾을 수 없는 경우
+        """
+        post = self.post_model.find_by_id(post_id)
+        if not post:
+            raise NotFoundException("게시글을 찾을 수 없습니다.")
+
+        self.post_model.increase_view_count(post_id)
+
+        return PostResponse.model_validate(post)
+
+    def update_post(self, post_id: int, request: UpdatePostRequest) -> PostResponse:
+        """게시글 수정 (작성자만 가능)
+
+        Args:
+            post_id: 게시글 ID
+            request: 게시글 수정 요청 정보
+                - title: 게시글 제목 (선택)
+                - content: 게시글 내용 (선택)
+                - img_url: 이미지 URL (선택)
+                - author_id: 요청자 ID (권한 검증용)
+
+        Returns:
+            PostResponse: 수정된 게시글 정보
+
+        Raises:
+            NotFoundException: 게시글을 찾을 수 없는 경우
+            UnauthorizedException: 작성자가 아닌 경우
+        """
+        post = self.post_model.find_by_id(post_id)
+        if not post:
+            raise NotFoundException("게시글을 찾을 수 없습니다.")
+
+        if post.author_id != request.author_id:
+            raise UnauthorizedException("게시글 수정 권한이 없습니다.")
+
+        updated_post = self.post_model.update(
+            post_id=post_id,
+            title=request.title,
+            content=request.content,
+            img_url=request.img_url
+        )
+
+        return PostResponse.model_validate(updated_post)
+
+    def delete_post(self, post_id: int, author_id: int) -> dict:
+        """게시글 삭제 (작성자만 가능)
+
+        Args:
+            post_id: 게시글 ID
+            author_id: 요청자 ID (권한 검증용)
+
+        Returns:
+            dict: 성공 메시지
+
+        Raises:
+            NotFoundException: 게시글을 찾을 수 없는 경우
+            UnauthorizedException: 작성자가 아닌 경우
+        """
+        post = self.post_model.find_by_id(post_id)
+        if not post:
+            raise NotFoundException("게시글을 찾을 수 없습니다.")
+
+        if post.author_id != author_id:
+            raise UnauthorizedException("게시글 삭제 권한이 없습니다.")
+
+        success = self.post_model.delete(post_id)
+        if not success:
+            raise NotFoundException("게시글 삭제에 실패했습니다.")
+
+        return {"message": "게시글이 삭제되었습니다."}
