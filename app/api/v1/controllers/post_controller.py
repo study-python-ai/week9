@@ -134,3 +134,83 @@ class PostController:
             raise NotFoundException("게시글 삭제에 실패했습니다.")
 
         return {"message": "게시글이 삭제되었습니다."}
+
+    def like_post(self, post_id: int) -> PostResponse:
+        """게시글 좋아요 증가
+
+        Args:
+            post_id: 게시글 ID
+
+        Returns:
+            PostResponse: 좋아요 수가 증가된 게시글 정보
+
+        Raises:
+            NotFoundException: 게시글을 찾을 수 없는 경우
+        """
+        post = self.post_model.find_by_id(post_id)
+        if not post:
+            raise NotFoundException("게시글을 찾을 수 없습니다.")
+
+        self.post_model.increase_like_count(post_id)
+
+        return PostResponse.model_validate(post)
+
+    def unlike_post(self, post_id: int) -> PostResponse:
+        """게시글 좋아요 감소
+
+        Args:
+            post_id: 게시글 ID
+
+        Returns:
+            PostResponse: 좋아요 수가 감소된 게시글 정보
+
+        Raises:
+            NotFoundException: 게시글을 찾을 수 없는 경우
+        """
+        post = self.post_model.find_by_id(post_id)
+        if not post:
+            raise NotFoundException("게시글을 찾을 수 없습니다.")
+
+        self.post_model.decrease_like_count(post_id)
+
+        return PostResponse.model_validate(post)
+
+    def add_comment(self, post_id: int) -> PostResponse:
+        """게시글 댓글 수 증가
+
+        Args:
+            post_id: 게시글 ID
+
+        Returns:
+            PostResponse: 댓글 수가 증가된 게시글 정보
+
+        Raises:
+            NotFoundException: 게시글을 찾을 수 없는 경우
+        """
+        post = self.post_model.find_by_id(post_id)
+        if not post:
+            raise NotFoundException("게시글을 찾을 수 없습니다.")
+
+        self.post_model.increase_comment_count(post_id)
+
+        return PostResponse.model_validate(post)
+
+    def remove_comment(self, post_id: int) -> PostResponse:
+        """게시글 댓글 수 감소
+
+        Args:
+            post_id: 게시글 ID
+
+        Returns:
+            PostResponse: 댓글 수가 감소된 게시글 정보
+
+        Raises:
+            NotFoundException: 게시글을 찾을 수 없는 경우
+        """
+        post = self.post_model.find_by_id(post_id)
+        if not post:
+            raise NotFoundException("게시글을 찾을 수 없습니다.")
+
+        self.post_model.decrease_comment_count(post_id)
+
+        return PostResponse.model_validate(post)
