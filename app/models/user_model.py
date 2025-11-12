@@ -16,11 +16,19 @@ class User:
 
 
 class UserModel:
-    """사용자 데이터 관리 (인메모리)"""
+    """사용자 데이터 관리 (인메모리 - 싱글톤)"""
+
+    _instance = None
+    _users: List[User] = []
+    _next_id: int = 1
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
-        self._users: List[User] = []
-        self._next_id: int = 1
+        pass
 
     def create(self, email: str, password: str, nick_name: str, image_url: Optional[str] = None) -> User:
         """사용자 생성"""

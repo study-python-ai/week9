@@ -19,11 +19,19 @@ class Post:
 
 
 class PostModel:
-    """게시글 데이터 관리 (인메모리)"""
+    """게시글 데이터 관리 (인메모리 - 싱글톤)"""
+
+    _instance = None
+    _posts: List[Post] = []
+    _next_id: int = 1
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
-        self._posts: List[Post] = []
-        self._next_id: int = 1
+        pass
 
     def create(self, title: str, content: str, author_id: int, img_url: Optional[str] = None) -> Post:
         """게시글 생성"""
