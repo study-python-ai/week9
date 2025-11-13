@@ -4,18 +4,22 @@ from app.schemas.post_schema import (
     PostResponse,
     PostListResponse,
     PostStatusResponse,
+    CreateCommentRequest,
+    CommentResponse,
 )
 from app.models.post_model import PostModel, Post
 from app.models.user_model import UserModel
+from app.models.comment_model import CommentModel
 from app.common.exceptions import NotFoundException, UnauthorizedException
 
 
 class PostController:
     """게시글 관련 비즈니스 로직 처리"""
 
-    def __init__(self, user_model: UserModel = None):
+    def __init__(self, user_model: UserModel = None, comment_model: CommentModel = None):
         self.post_model = PostModel()
         self.user_model = user_model if user_model else UserModel()
+        self.comment_model = comment_model if comment_model else CommentModel()
 
     def _convert_to_response(self, post: Post) -> PostResponse:
         """Post 객체를 PostResponse로 변환
@@ -201,42 +205,65 @@ class PostController:
 
         return self._convert_to_response(post)
 
-    def add_comment(self, post_id: int) -> PostResponse:
-        """게시글 댓글 수 증가
+    def add_comment(self, post_id: int, request: CreateCommentRequest) -> PostResponse:
+        """댓글 생성
 
         Args:
             post_id: 게시글 ID
+            request: 댓글 생성 요청 정보
+                - content: 댓글 내용
+                - author_id: 작성자 ID
+                - img_url: 프로필 이미지 URL (선택)
 
         Returns:
-            PostResponse: 댓글 수가 증가된 게시글 정보
+            PostResponse: 댓글이 추가된 게시글 정보
 
         Raises:
-            NotFoundException: 게시글을 찾을 수 없는 경우
+            NotFoundException: 게시글 또는 작성자를 찾을 수 없는 경우
         """
         post = self.post_model.find_by_id(post_id)
         if not post:
             raise NotFoundException("게시글을 찾을 수 없습니다.")
 
-        self.post_model.increase_comment_count(post_id)
+        author = self.user_model.find_by_id(request.author_id)
+        if not author:
+            raise NotFoundException("존재하지 않는 사용자입니다.")
+
+        comment = self.comment_model.create(
+            post_id=post_id,
+            author_id=request.author_id,
+            content=request.content,
+            img_url=request.img_url
+        )
 
         return self._convert_to_response(post)
 
-    def remove_comment(self, post_id: int) -> PostResponse:
-        """게시글 댓글 수 감소
+    def remove_comment(self, post_id: int, comment_id: int) -> PostResponse:
+        """댓글 삭제
 
         Args:
             post_id: 게시글 ID
+            comment_id: 댓글 ID
 
         Returns:
-            PostResponse: 댓글 수가 감소된 게시글 정보
+            PostResponse: 댓글이 삭제된 게시글 정보
 
         Raises:
-            NotFoundException: 게시글을 찾을 수 없는 경우
+            NotFoundException: 게시글 또는 댓글을 찾을 수 없는 경우
         """
         post = self.post_model.find_by_id(post_id)
         if not post:
             raise NotFoundException("게시글을 찾을 수 없습니다.")
 
-        self.post_model.decrease_comment_count(post_id)
+        comment = self.comment_model.find_by_id(comment_id)
+        if not comment:
+            raise NotFoundException("댓글을 찾을 수 없습니다.")
+
+        if comment.post_id != post_id:
+            raise NotFoundException("해당 게시글의 댓글이 아닙니다.")
+
+        success = self.comment_model.delete(comment_id)
+        if not success:
+            raise NotFoundException("댓글 삭제에 실패했습니다.")
 
         return self._convert_to_response(post)
