@@ -20,8 +20,18 @@ def validate_content(value: str) -> str:
     return value
 
 
+def validate_comment_content(value: str) -> str:
+    """댓글 내용 검증"""
+    if not value:
+        raise ValueError("댓글 내용은 필수 입력 항목입니다.")
+    if len(value) < 1 or len(value) > 1000:
+        raise ValueError("댓글 내용은 1자 이상 1000자 이하이어야 합니다.")
+    return value
+
+
 TitleStr = Annotated[str, AfterValidator(validate_title)]
 ContentStr = Annotated[str, AfterValidator(validate_content)]
+CommentContentStr = Annotated[str, AfterValidator(validate_comment_content)]
 
 
 class CreatePostRequest(BaseModel):
@@ -76,18 +86,41 @@ class PostStatusResponse(BaseModel):
         }
 
 
-class CommentResponse(BaseModel):
-    """댓글 응답 DTO"""
-    id: int
-    img_url: Optional[str] = None
-    content: str
+class CreateCommentRequest(BaseModel):
+    """댓글 생성 요청 DTO"""
+    content: CommentContentStr = Field(..., description="댓글 내용 (1-1000자)")
+    author_id: int = Field(..., gt=0, description="작성자 ID")
+    img_url: Optional[str] = Field(None, description="프로필 이미지 URL")
 
     class Config:
         json_schema_extra = {
             "example": {
+                "content": "유익한 게시글 감사합니다!",
+                "author_id": 2,
+                "img_url": "https://example.com/profile.jpg"
+            }
+        }
+
+
+class CommentResponse(BaseModel):
+    """댓글 응답 DTO"""
+    id: int
+    post_id: int
+    author_id: int
+    content: str
+    img_url: Optional[str] = None
+    created_at: str
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
                 "id": 1,
+                "post_id": 1,
+                "author_id": 2,
+                "content": "유익한 게시글 감사합니다!",
                 "img_url": "https://example.com/profile.jpg",
-                "content": "댓글 내용입니다."
+                "created_at": "2025-11-13T21:00:00"
             }
         }
 
