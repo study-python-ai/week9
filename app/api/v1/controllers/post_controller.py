@@ -30,6 +30,19 @@ class PostController:
         Returns:
             PostResponse: 변환된 응답 객체
         """
+        comments = self.comment_model.find_by_post_id(post.id)
+        comment_responses = [
+            CommentResponse(
+                id=comment.id,
+                post_id=comment.post_id,
+                author_id=comment.author_id,
+                content=comment.content,
+                img_url=comment.img_url,
+                created_at=comment.created_at
+            )
+            for comment in comments
+        ]
+
         return PostResponse(
             id=post.id,
             title=post.title,
@@ -43,7 +56,7 @@ class PostController:
             ),
             del_yn=post.del_yn,
             created_at=post.created_at,
-            comments=[]
+            comments=comment_responses
         )
 
     def create_post(self, request: CreatePostRequest) -> PostResponse:

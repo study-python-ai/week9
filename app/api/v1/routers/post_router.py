@@ -5,6 +5,7 @@ from app.schemas.post_schema import (
     UpdatePostRequest,
     PostResponse,
     PostListResponse,
+    CreateCommentRequest,
 )
 
 router = APIRouter(prefix="/api/v1/posts", tags=["posts"])
@@ -134,7 +135,9 @@ async def delete_post(
     return controller.delete_post(post_id, author_id)
 
 
-@router.post("/{post_id}/like", response_model=PostResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/{post_id}/like", response_model=PostResponse, status_code=status.HTTP_200_OK
+)
 async def like_post(
     post_id: int,
     controller: PostController = Depends(get_post_controller),
@@ -156,7 +159,9 @@ async def like_post(
     return controller.like_post(post_id)
 
 
-@router.delete("/{post_id}/like", response_model=PostResponse, status_code=status.HTTP_200_OK)
+@router.delete(
+    "/{post_id}/like", response_model=PostResponse, status_code=status.HTTP_200_OK
+)
 async def unlike_post(
     post_id: int,
     controller: PostController = Depends(get_post_controller),
@@ -178,45 +183,56 @@ async def unlike_post(
     return controller.unlike_post(post_id)
 
 
-@router.post("/{post_id}/comment", response_model=PostResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/{post_id}/comment", response_model=PostResponse, status_code=status.HTTP_201_CREATED
+)
 async def add_comment(
     post_id: int,
+    request: CreateCommentRequest,
     controller: PostController = Depends(get_post_controller),
 ):
-    """댓글 추가 (댓글 수 증가)
+    """댓글 생성
 
-    게시글의 댓글 수를 1 증가시킵니다.
+    게시글에 새로운 댓글을 추가합니다.
 
     Args:
         post_id: 게시글 ID
+        request: 댓글 생성 요청 정보
+            - content: 댓글 내용 (1-1000자)
+            - author_id: 작성자 ID
+            - img_url: 프로필 이미지 URL (선택)
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
-        PostResponse: 댓글 수가 증가된 게시글 정보
+        PostResponse: 댓글이 추가된 게시글 정보
 
     Raises:
-        NotFoundException: 게시글을 찾을 수 없는 경우
+        NotFoundException: 게시글 또는 작성자를 찾을 수 없는 경우
     """
-    return controller.add_comment(post_id)
+    return controller.add_comment(post_id, request)
 
 
-@router.delete("/{post_id}/comment", response_model=PostResponse, status_code=status.HTTP_200_OK)
+@router.delete(
+    "/{post_id}/comment/{comment_id}", response_model=PostResponse, status_code=status.HTTP_200_OK
+)
 async def remove_comment(
     post_id: int,
+    comment_id: int,
     controller: PostController = Depends(get_post_controller),
 ):
-    """댓글 삭제 (댓글 수 감소)
+    """댓글 삭제
 
-    게시글의 댓글 수를 1 감소시킵니다.
+    특정 댓글을 삭제합니다.
 
     Args:
         post_id: 게시글 ID
+        comment_id: 댓글 ID
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
-        PostResponse: 댓글 수가 감소된 게시글 정보
+        PostResponse: 댓글이 삭제된 게시글 정보
 
     Raises:
-        NotFoundException: 게시글을 찾을 수 없는 경우
+        NotFoundException: 게시글 또는 댓글을 찾을 수 없는 경우
     """
-    return controller.remove_comment(post_id)
+    return controller.remove_comment(post_id, comment_id)
