@@ -1,10 +1,13 @@
 from typing import Annotated, Optional
 from pydantic import BaseModel, AfterValidator, Field
+from re import match
 
 
 def validate_email(value: str) -> str:
     """이메일 검증"""
-    if not value or "@" not in value:
+    if not value:
+        raise ValueError("이메일은 필수 입력 항목입니다.")
+    if not match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", value):
         raise ValueError("올바른 이메일 형식이 아닙니다.")
     return value
 
