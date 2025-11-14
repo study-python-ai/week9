@@ -9,9 +9,11 @@ app.include_router(post_router.router)
 
 @app.get("/", tags=["root"])
 async def root():
-    """루트 엔드포인트
+    """
+        루트 엔드포인트
 
     Returns:
+
         dict: 환영 메시지
     """
     return {"message": "Kakao TASK API ", "version": "1.0.0", "docs": "/docs"}

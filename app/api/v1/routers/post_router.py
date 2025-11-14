@@ -15,6 +15,7 @@ def get_post_controller() -> PostController:
     """의존성 주입을 위한 컨트롤러 팩토리
 
     Returns:
+
         PostController: 게시글 컨트롤러 인스턴스
     """
     return PostController()
@@ -28,6 +29,7 @@ async def create_post(
     """게시글 등록
 
     Args:
+
         request: 게시글 등록 요청 정보
             - title: 게시글 제목 (1-100자)
             - content: 게시글 내용 (1-5000자)
@@ -36,9 +38,11 @@ async def create_post(
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
+
         PostResponse: 생성된 게시글 정보
 
     Raises:
+
         NotFoundException: 작성자가 존재하지 않는 경우
     """
     return controller.create_post(request)
@@ -51,6 +55,7 @@ async def get_posts(controller: PostController = Depends(get_post_controller)):
     삭제되지 않은 모든 게시글을 조회합니다.
 
     Args:
+
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
@@ -68,13 +73,16 @@ async def get_post(
     게시글을 조회하고 조회수를 1 증가시킵니다.
 
     Args:
+
         post_id: 게시글 ID
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
+
         PostResponse: 게시글 정보
 
     Raises:
+
         NotFoundException: 게시글을 찾을 수 없는 경우
     """
     return controller.get_post(post_id)
@@ -91,6 +99,7 @@ async def update_post(
     작성자만 게시글을 수정할 수 있습니다.
 
     Args:
+
         post_id: 게시글 ID
         request: 게시글 수정 요청 정보
             - title: 게시글 제목 (선택)
@@ -100,9 +109,11 @@ async def update_post(
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
+
         PostResponse: 수정된 게시글 정보
 
     Raises:
+
         NotFoundException: 게시글을 찾을 수 없는 경우
         UnauthorizedException: 작성자가 아닌 경우
     """
@@ -121,14 +132,17 @@ async def delete_post(
     논리적 삭제(del_yn='Y')가 수행됩니다.
 
     Args:
+
         post_id: 게시글 ID
         author_id: 요청자 ID (권한 검증용, 쿼리 파라미터)
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
+
         dict: 성공 메시지
 
     Raises:
+    
         NotFoundException: 게시글을 찾을 수 없는 경우
         UnauthorizedException: 작성자가 아닌 경우
     """
@@ -147,13 +161,16 @@ async def like_post(
     게시글의 좋아요 수를 1 증가시킵니다.
 
     Args:
+
         post_id: 게시글 ID
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
+
         PostResponse: 좋아요 수가 증가된 게시글 정보
 
     Raises:
+
         NotFoundException: 게시글을 찾을 수 없는 경우
     """
     return controller.like_post(post_id)
@@ -171,20 +188,25 @@ async def unlike_post(
     게시글의 좋아요 수를 1 감소시킵니다.
 
     Args:
+
         post_id: 게시글 ID
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
+
         PostResponse: 좋아요 수가 감소된 게시글 정보
 
     Raises:
+
         NotFoundException: 게시글을 찾을 수 없는 경우
     """
     return controller.unlike_post(post_id)
 
 
 @router.post(
-    "/{post_id}/comment", response_model=PostResponse, status_code=status.HTTP_201_CREATED
+    "/{post_id}/comment",
+    response_model=PostResponse,
+    status_code=status.HTTP_201_CREATED,
 )
 async def add_comment(
     post_id: int,
@@ -196,6 +218,7 @@ async def add_comment(
     게시글에 새로운 댓글을 추가합니다.
 
     Args:
+
         post_id: 게시글 ID
         request: 댓글 생성 요청 정보
             - content: 댓글 내용 (1-1000자)
@@ -204,16 +227,20 @@ async def add_comment(
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
+
         PostResponse: 댓글이 추가된 게시글 정보
 
     Raises:
+
         NotFoundException: 게시글 또는 작성자를 찾을 수 없는 경우
     """
     return controller.add_comment(post_id, request)
 
 
 @router.delete(
-    "/{post_id}/comment/{comment_id}", response_model=PostResponse, status_code=status.HTTP_200_OK
+    "/{post_id}/comment/{comment_id}",
+    response_model=PostResponse,
+    status_code=status.HTTP_200_OK,
 )
 async def remove_comment(
     post_id: int,
@@ -225,14 +252,17 @@ async def remove_comment(
     특정 댓글을 삭제합니다.
 
     Args:
+
         post_id: 게시글 ID
         comment_id: 댓글 ID
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
+
         PostResponse: 댓글이 삭제된 게시글 정보
 
     Raises:
+
         NotFoundException: 게시글 또는 댓글을 찾을 수 없는 경우
     """
     return controller.remove_comment(post_id, comment_id)

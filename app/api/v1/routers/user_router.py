@@ -15,6 +15,7 @@ def get_user_controller() -> UserController:
         의존성 주입
 
     Returns:
+
         UserController: 사용자 컨트롤러
     """
     return UserController()
@@ -39,9 +40,11 @@ async def register_user(
             - image_url: 프로필 이미지 URL (선택)
 
     Returns:
+
         UserResponse: 생성된 사용자 정보
 
     Raises:
+
         DuplicateException: 이미 존재하는 이메일인 경우
     """
     return controller.register(request)
@@ -64,9 +67,11 @@ async def login_user(
             - password: 비밀번호
 
     Returns:
+
         UserResponse: 로그인된 사용자 정보
 
     Raises:
+
         UnauthorizedException: 이메일 또는 비밀번호가 일치하지 않는 경우
     """
     return controller.login(request)
@@ -78,6 +83,7 @@ async def logout_user(controller: UserController = Depends(get_user_controller))
         로그아웃
 
     Returns:
+
         dict: 성공 메시지
     """
     return controller.logout()
@@ -94,12 +100,15 @@ async def get_user_profile(
         user_id로 프로필을 조회합니다.
 
     Args:
+
         user_id: 사용자 ID
 
     Returns:
+
         UserResponse: 사용자 정보
 
     Raises:
+
         NotFoundException: 사용자를 찾을 수 없는 경우
     """
     return controller.get_profile(user_id)
@@ -125,9 +134,11 @@ async def update_user_profile(
             - image_url: 프로필 이미지 URL (선택)
 
     Returns:
+
         UserResponse: 수정된 사용자 정보
 
     Raises:
+
         NotFoundException: 사용자를 찾을 수 없는 경우
     """
     return controller.update_profile(user_id, request)
@@ -140,12 +151,15 @@ async def delete_user(
     """회원 탈퇴
 
     Args:
+
         user_id: 사용자 ID
 
     Returns:
+
         dict: 성공 메시지
 
     Raises:
+
         NotFoundException: 사용자를 찾을 수 없는 경우
     """
     return controller.delete_user(user_id)
