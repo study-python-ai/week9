@@ -15,19 +15,11 @@ class Comment:
 
 
 class CommentModel:
-    """댓글 데이터 관리 (인메모리 - 싱글톤)"""
-
-    _instance = None
-    _comments: List[Comment] = []
-    _next_id: int = 1
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+    """댓글 데이터 관리 (인메모리)"""
 
     def __init__(self):
-        pass
+        self._comments: List[Comment] = []
+        self._next_id: int = 1
 
     def create(self, post_id: int, author_id: int, content: str, img_url: Optional[str] = None) -> Comment:
         """댓글 생성"""

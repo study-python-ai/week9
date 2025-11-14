@@ -18,10 +18,15 @@ from app.common.validators import get_or_raise, verify_ownership
 class PostController:
     """게시글 관련 비즈니스 로직 처리"""
 
-    def __init__(self, user_model: UserModel = None, comment_model: CommentModel = None):
-        self.post_model = PostModel()
-        self.user_model = user_model if user_model else UserModel()
-        self.comment_model = comment_model if comment_model else CommentModel()
+    def __init__(
+        self,
+        post_model: PostModel,
+        user_model: UserModel,
+        comment_model: CommentModel
+    ):
+        self.post_model = post_model
+        self.user_model = user_model
+        self.comment_model = comment_model
 
     def _convert_to_response(self, post: Post) -> PostResponse:
         """Post 객체를 PostResponse로 변환

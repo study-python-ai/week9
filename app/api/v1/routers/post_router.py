@@ -1,5 +1,9 @@
 from fastapi import APIRouter, Depends, status
 from app.api.v1.controllers.post_controller import PostController
+from app.models.post_model import PostModel
+from app.models.user_model import UserModel
+from app.models.comment_model import CommentModel
+from app.dependencies import get_post_model, get_user_model, get_comment_model
 from app.schemas.post_schema import (
     CreatePostRequest,
     UpdatePostRequest,
@@ -12,14 +16,22 @@ from app.schemas.post_schema import (
 router = APIRouter(prefix="/api/v1/posts", tags=["posts"])
 
 
-def get_post_controller() -> PostController:
-    """의존성 주입을 위한 컨트롤러 팩토리
+def get_post_controller(
+    post_model: PostModel = Depends(get_post_model),
+    user_model: UserModel = Depends(get_user_model),
+    comment_model: CommentModel = Depends(get_comment_model)
+) -> PostController:
+    """게시글 컨트롤러 의존성 주입
+
+    Args:
+        post_model: 게시글 모델 (의존성 주입)
+        user_model: 사용자 모델 (의존성 주입)
+        comment_model: 댓글 모델 (의존성 주입)
 
     Returns:
-
         PostController: 게시글 컨트롤러 인스턴스
     """
-    return PostController()
+    return PostController(post_model, user_model, comment_model)
 
 
 @router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED)

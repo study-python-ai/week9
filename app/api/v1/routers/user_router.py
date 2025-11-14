@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from app.api.v1.controllers.user_controller import UserController
+from app.models.user_model import UserModel
+from app.dependencies import get_user_model
 from app.schemas.user_schema import (
     RegisterUserRequest,
     LoginUserRequest,
@@ -10,15 +12,18 @@ from app.schemas.user_schema import (
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
 
-def get_user_controller() -> UserController:
-    """
-        의존성 주입
+def get_user_controller(
+    user_model: UserModel = Depends(get_user_model)
+) -> UserController:
+    """사용자 컨트롤러 의존성 주입
+
+    Args:
+        user_model: 사용자 모델 (의존성 주입)
 
     Returns:
-
-        UserController: 사용자 컨트롤러
+        UserController: 사용자 컨트롤러 인스턴스
     """
-    return UserController()
+    return UserController(user_model)
 
 
 @router.post(

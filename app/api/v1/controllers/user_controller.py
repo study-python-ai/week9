@@ -12,8 +12,8 @@ from app.common.validators import get_or_raise, ensure_unique
 class UserController:
     """사용자 관련 비즈니스 로직 처리"""
 
-    def __init__(self):
-        self.user_model = UserModel()
+    def __init__(self, user_model: UserModel):
+        self.user_model = user_model
 
     def register(self, request: RegisterUserRequest) -> UserResponse:
         """회원가입 처리
