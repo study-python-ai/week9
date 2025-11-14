@@ -5,6 +5,7 @@ from app.schemas.post_schema import (
     PostListResponse,
     PostStatusResponse,
     CreateCommentRequest,
+    UpdateCommentRequest,
     CommentResponse,
 )
 from app.models.post_model import PostModel, Post
@@ -251,18 +252,22 @@ class PostController:
 
         return self._convert_to_response(post)
 
-    def remove_comment(self, post_id: int, comment_id: int) -> PostResponse:
-        """댓글 삭제
+    def update_comment(self, post_id: int, comment_id: int, request: UpdateCommentRequest) -> PostResponse:
+        """댓글 수정 (작성자만 가능)
 
         Args:
             post_id: 게시글 ID
             comment_id: 댓글 ID
+            request: 댓글 수정 요청 정보
+                - content: 댓글 내용
+                - author_id: 요청자 ID (권한 검증용)
 
         Returns:
-            PostResponse: 댓글이 삭제된 게시글 정보
+            PostResponse: 댓글이 수정된 게시글 정보
 
         Raises:
             NotFoundException: 게시글 또는 댓글을 찾을 수 없는 경우
+            UnauthorizedException: 작성자가 아닌 경우
         """
         post = self.post_model.find_by_id(post_id)
         if not post:
@@ -274,6 +279,44 @@ class PostController:
 
         if comment.post_id != post_id:
             raise NotFoundException("해당 게시글의 댓글이 아닙니다.")
+
+        if comment.author_id != request.author_id:
+            raise UnauthorizedException("댓글 수정 권한이 없습니다.")
+
+        updated_comment = self.comment_model.update(comment_id, request.content)
+        if not updated_comment:
+            raise NotFoundException("댓글 수정에 실패했습니다.")
+
+        return self._convert_to_response(post)
+
+    def remove_comment(self, post_id: int, comment_id: int, author_id: int) -> PostResponse:
+        """댓글 삭제 (작성자만 가능)
+
+        Args:
+            post_id: 게시글 ID
+            comment_id: 댓글 ID
+            author_id: 요청자 ID (권한 검증용)
+
+        Returns:
+            PostResponse: 댓글이 삭제된 게시글 정보
+
+        Raises:
+            NotFoundException: 게시글 또는 댓글을 찾을 수 없는 경우
+            UnauthorizedException: 작성자가 아닌 경우
+        """
+        post = self.post_model.find_by_id(post_id)
+        if not post:
+            raise NotFoundException("게시글을 찾을 수 없습니다.")
+
+        comment = self.comment_model.find_by_id(comment_id)
+        if not comment:
+            raise NotFoundException("댓글을 찾을 수 없습니다.")
+
+        if comment.post_id != post_id:
+            raise NotFoundException("해당 게시글의 댓글이 아닙니다.")
+
+        if comment.author_id != author_id:
+            raise UnauthorizedException("댓글 삭제 권한이 없습니다.")
 
         success = self.comment_model.delete(comment_id)
         if not success:

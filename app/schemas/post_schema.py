@@ -102,6 +102,20 @@ class CreateCommentRequest(BaseModel):
         }
 
 
+class UpdateCommentRequest(BaseModel):
+    """댓글 수정 요청 DTO"""
+    content: CommentContentStr = Field(..., description="댓글 내용 (1-1000자)")
+    author_id: int = Field(..., gt=0, description="요청자 ID (권한 검증용)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "content": "수정된 댓글 내용입니다.",
+                "author_id": 2
+            }
+        }
+
+
 class CommentResponse(BaseModel):
     """댓글 응답 DTO"""
     id: int

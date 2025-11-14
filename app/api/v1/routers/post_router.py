@@ -6,6 +6,7 @@ from app.schemas.post_schema import (
     PostResponse,
     PostListResponse,
     CreateCommentRequest,
+    UpdateCommentRequest,
 )
 
 router = APIRouter(prefix="/api/v1/posts", tags=["posts"])
@@ -237,6 +238,42 @@ async def add_comment(
     return controller.add_comment(post_id, request)
 
 
+@router.patch(
+    "/{post_id}/comment/{comment_id}",
+    response_model=PostResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def update_comment(
+    post_id: int,
+    comment_id: int,
+    request: UpdateCommentRequest,
+    controller: PostController = Depends(get_post_controller),
+):
+    """댓글 수정
+
+    작성자만 댓글을 수정할 수 있습니다.
+
+    Args:
+
+        post_id: 게시글 ID
+        comment_id: 댓글 ID
+        request: 댓글 수정 요청 정보
+            - content: 댓글 내용 (1-1000자)
+            - author_id: 요청자 ID (권한 검증용)
+        controller: 게시글 컨트롤러 (의존성 주입)
+
+    Returns:
+
+        PostResponse: 댓글이 수정된 게시글 정보
+
+    Raises:
+
+        NotFoundException: 게시글 또는 댓글을 찾을 수 없는 경우
+        UnauthorizedException: 작성자가 아닌 경우
+    """
+    return controller.update_comment(post_id, comment_id, request)
+
+
 @router.delete(
     "/{post_id}/comment/{comment_id}",
     response_model=PostResponse,
@@ -245,16 +282,18 @@ async def add_comment(
 async def remove_comment(
     post_id: int,
     comment_id: int,
+    author_id: int,
     controller: PostController = Depends(get_post_controller),
 ):
     """댓글 삭제
 
-    특정 댓글을 삭제합니다.
+    작성자만 댓글을 삭제할 수 있습니다.
 
     Args:
 
         post_id: 게시글 ID
         comment_id: 댓글 ID
+        author_id: 요청자 ID (권한 검증용, 쿼리 파라미터)
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
@@ -264,5 +303,6 @@ async def remove_comment(
     Raises:
 
         NotFoundException: 게시글 또는 댓글을 찾을 수 없는 경우
+        UnauthorizedException: 작성자가 아닌 경우
     """
-    return controller.remove_comment(post_id, comment_id)
+    return controller.remove_comment(post_id, comment_id, author_id)

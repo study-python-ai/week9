@@ -66,3 +66,12 @@ class CommentModel:
     def count_by_post_id(self, post_id: int) -> int:
         """게시글의 댓글 수 조회"""
         return len(self.find_by_post_id(post_id))
+
+    def update(self, comment_id: int, content: str) -> Optional[Comment]:
+        """댓글 내용 수정"""
+        comment = self.find_by_id(comment_id)
+        if not comment:
+            return None
+
+        comment.content = content
+        return comment
