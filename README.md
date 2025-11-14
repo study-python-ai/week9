@@ -27,6 +27,15 @@ uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 | http://localhost:8000/ | 기본 API 엔드포인트 |
 | http://localhost:8000/redoc | ReDoc API 문서 |
 
+## 패키지 구조
+|패키지명| 설명|
+|-----|------|
+|schemas| 명세서, 데이터 검증 |
+|common | 공통 에러 처리 및 비지니스 에러 처리 유틸|
+|router | API 요청에 따라 Controller 연결|
+|controller| 비지니스 처리|
+
+
 -----
 
 <details>
