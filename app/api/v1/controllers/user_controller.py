@@ -5,11 +5,8 @@ from app.schemas.user_schema import (
     UserResponse
 )
 from app.models.user_model import UserModel
-from app.common.exceptions import (
-    UnauthorizedException,
-    DuplicateException,
-    NotFoundException
-)
+from app.common.exceptions import UnauthorizedException
+from app.common.validators import get_or_raise, ensure_unique
 
 
 class UserController:
@@ -34,8 +31,10 @@ class UserController:
         Raises:
             DuplicateException: 이미 존재하는 이메일인 경우
         """
-        if self.user_model.exists_by_email(request.email):
-            raise DuplicateException("이미 존재하는 이메일입니다.")
+        ensure_unique(
+            self.user_model.exists_by_email(request.email),
+            "이미 존재하는 이메일입니다."
+        )
 
         user = self.user_model.create(
             email=request.email,
@@ -59,9 +58,12 @@ class UserController:
         Raises:
             UnauthorizedException: 이메일 또는 비밀번호가 일치하지 않는 경우
         """
-        user = self.user_model.find_by_email(request.email)
+        user = get_or_raise(
+            self.user_model.find_by_email(request.email),
+            "이메일 또는 비밀번호가 일치하지 않습니다."
+        )
 
-        if not user or user.password != request.password:
+        if user.password != request.password:
             raise UnauthorizedException("이메일 또는 비밀번호가 일치하지 않습니다.")
 
         return UserResponse.model_validate(user)
@@ -86,10 +88,10 @@ class UserController:
         Raises:
             NotFoundException: 사용자를 찾을 수 없는 경우
         """
-        user = self.user_model.find_by_id(user_id)
-
-        if not user:
-            raise NotFoundException("사용자를 찾을 수 없습니다.")
+        user = get_or_raise(
+            self.user_model.find_by_id(user_id),
+            "사용자를 찾을 수 없습니다."
+        )
 
         return UserResponse.model_validate(user)
 
@@ -108,14 +110,14 @@ class UserController:
         Raises:
             NotFoundException: 사용자를 찾을 수 없는 경우
         """
-        user = self.user_model.update(
-            user_id=user_id,
-            nick_name=request.nick_name,
-            image_url=request.image_url
+        user = get_or_raise(
+            self.user_model.update(
+                user_id=user_id,
+                nick_name=request.nick_name,
+                image_url=request.image_url
+            ),
+            "사용자를 찾을 수 없습니다."
         )
-
-        if not user:
-            raise NotFoundException("사용자를 찾을 수 없습니다.")
 
         return UserResponse.model_validate(user)
 
@@ -131,9 +133,11 @@ class UserController:
         Raises:
             NotFoundException: 사용자를 찾을 수 없는 경우
         """
-        success = self.user_model.delete(user_id)
+        get_or_raise(
+            self.user_model.find_by_id(user_id),
+            "사용자를 찾을 수 없습니다."
+        )
 
-        if not success:
-            raise NotFoundException("사용자를 찾을 수 없습니다.")
+        self.user_model.delete(user_id)
 
         return {"message": "회원 탈퇴가 완료되었습니다."}
