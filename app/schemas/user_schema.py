@@ -71,6 +71,7 @@ class UpdateUserRequest(BaseModel):
 
     nick_name: Optional[NickNameStr] = Field(None, description="닉네임 (2-20자)")
     image_url: Optional[str] = Field(None, description="프로필 이미지 URL")
+    # TODO : 비밀번호 수정 추가
 
     class Config:
         json_schema_extra = {
