@@ -61,9 +61,7 @@ class LoginUserRequest(BaseModel):
     password: str = Field(..., description="비밀번호")
 
     class Config:
-        json_schema_extra = {
-            "example": {"email": "user@example.com", "password": "password123"}
-        }
+        json_schema_extra = {"example": {"email": "user@example.com", "password": "password123"}}
 
 
 class UpdateUserRequest(BaseModel):
@@ -76,8 +74,8 @@ class UpdateUserRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "nick_name": "새로운닉네임",
-                "image_url": "https://example.com/new-profile.jpg",
+                "nick_name": "새로운닉네임",  # 닉네임
+                "image_url": "https://example.com/new-profile.jpg",  # 프로필 이미지 URL
             }
         }
 

@@ -18,9 +18,7 @@ from app.common.validators import get_or_raise, verify_ownership
 class PostController:
     """게시글 관련 비즈니스 로직 처리"""
 
-    def __init__(
-        self, post_model: PostModel, user_model: UserModel, comment_model: CommentModel
-    ):
+    def __init__(self, post_model: PostModel, user_model: UserModel, comment_model: CommentModel):
         self.post_model = post_model
         self.user_model = user_model
         self.comment_model = comment_model
@@ -54,9 +52,7 @@ class PostController:
             author_id=post.author_id,
             img_url=post.img_url,
             status=PostStatusResponse(
-                view_count=post.view_count,
-                like_count=post.like_count,
-                comment_count=post.comment_count,
+                view_count=post.view_count, like_count=post.like_count, comment_count=post.comment_count
             ),
             del_yn=post.del_yn,
             created_at=post.created_at,
@@ -67,21 +63,19 @@ class PostController:
         """게시글 등록
 
         Args:
-            request: 게시글 등록 요청
+            request: 게시글 등록 요청 정보
                 - title: 게시글 제목
                 - content: 게시글 내용
                 - author_id: 작성자 ID
                 - img_url: 이미지 URL (선택)
 
         Returns:
-            PostResponse: 생성된 게시글
+            PostResponse: 생성된 게시글 정보
 
         Raises:
             NotFoundException: 작성자(author_id)가 존재하지 않는 경우
         """
-        get_or_raise(
-            self.user_model.find_by_id(request.author_id), "존재하지 않는 사용자입니다."
-        )
+        get_or_raise(self.user_model.find_by_id(request.author_id), "존재하지 않는 사용자입니다.")
 
         post = self.post_model.create(
             title=request.title,
@@ -108,14 +102,12 @@ class PostController:
             post_id: 게시글 ID
 
         Returns:
-            PostResponse: 게시글
+            PostResponse: 게시글 정보
 
         Raises:
             NotFoundException: 게시글을 찾을 수 없는 경우
         """
-        post = get_or_raise(
-            self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다."
-        )
+        post = get_or_raise(self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다.")
 
         self.post_model.increase_view_count(post_id)
 
@@ -126,26 +118,22 @@ class PostController:
 
         Args:
             post_id: 게시글 ID
-            request: 게시글 수정 요청
+            request: 게시글 수정 요청 정보
                 - title: 게시글 제목 (선택)
                 - content: 게시글 내용 (선택)
                 - img_url: 이미지 URL (선택)
                 - author_id: 요청자 ID (권한 검증용)
 
         Returns:
-            PostResponse: 수정된 게시글
+            PostResponse: 수정된 게시글 정보
 
         Raises:
             NotFoundException: 게시글을 찾을 수 없는 경우
             UnauthorizedException: 작성자가 아닌 경우
         """
-        post = get_or_raise(
-            self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다."
-        )
+        post = get_or_raise(self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다.")
 
-        verify_ownership(
-            post.author_id, request.author_id, "게시글 수정 권한이 없습니다."
-        )
+        verify_ownership(post.author_id, request.author_id, "게시글 수정 권한이 없습니다.")
 
         updated_post = self.post_model.update(
             post_id=post_id,
@@ -170,9 +158,7 @@ class PostController:
             NotFoundException: 게시글을 찾을 수 없는 경우
             UnauthorizedException: 작성자가 아닌 경우
         """
-        post = get_or_raise(
-            self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다."
-        )
+        post = get_or_raise(self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다.")
 
         verify_ownership(post.author_id, author_id, "게시글 삭제 권한이 없습니다.")
 
@@ -187,14 +173,12 @@ class PostController:
             post_id: 게시글 ID
 
         Returns:
-            PostResponse: 좋아요 수가 증가된 게시글
+            PostResponse: 좋아요 수가 증가된 게시글 정보
 
         Raises:
             NotFoundException: 게시글을 찾을 수 없는 경우
         """
-        post = get_or_raise(
-            self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다."
-        )
+        post = get_or_raise(self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다.")
 
         self.post_model.increase_like_count(post_id)
 
@@ -207,14 +191,12 @@ class PostController:
             post_id: 게시글 ID
 
         Returns:
-            PostResponse: 좋아요 수가 감소된 게시글
+            PostResponse: 좋아요 수가 감소된 게시글 정보
 
         Raises:
             NotFoundException: 게시글을 찾을 수 없는 경우
         """
-        post = get_or_raise(
-            self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다."
-        )
+        post = get_or_raise(self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다.")
 
         self.post_model.decrease_like_count(post_id)
 
@@ -225,75 +207,60 @@ class PostController:
 
         Args:
             post_id: 게시글 ID
-            request: 댓글 생성 요청
+            request: 댓글 생성 요청 정보
                 - content: 댓글 내용
                 - author_id: 작성자 ID
                 - img_url: 프로필 이미지 URL (선택)
 
         Returns:
-            PostResponse: 댓글이 추가된 게시글
+            PostResponse: 댓글이 추가된 게시글 정보
 
         Raises:
             NotFoundException: 게시글 또는 작성자를 찾을 수 없는 경우
         """
-        post = get_or_raise(
-            self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다."
+        post = get_or_raise(self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다.")
+
+        get_or_raise(self.user_model.find_by_id(request.author_id), "존재하지 않는 사용자입니다.")
+
+        self.comment_model.create(
+            post_id=post_id, author_id=request.author_id, content=request.content, img_url=request.img_url
         )
 
-        get_or_raise(
-            self.user_model.find_by_id(request.author_id), "존재하지 않는 사용자입니다."
-        )
-
-        comment = self.comment_model.create(
-            post_id=post_id,
-            author_id=request.author_id,
-            content=request.content,
-            img_url=request.img_url,
-        )
+        self.post_model.increase_comment_count(post_id)
 
         return self._convert_to_response(post)
 
-    def update_comment(
-        self, post_id: int, comment_id: int, request: UpdateCommentRequest
-    ) -> PostResponse:
+    def update_comment(self, post_id: int, comment_id: int, request: UpdateCommentRequest) -> PostResponse:
         """댓글 수정 (작성자만 가능)
 
         Args:
             post_id: 게시글 ID
             comment_id: 댓글 ID
-            request: 댓글 수정 요청
+            request: 댓글 수정 요청 정보
                 - content: 댓글 내용
                 - author_id: 요청자 ID (권한 검증용)
 
         Returns:
-            PostResponse: 댓글이 수정된 게시글
+            PostResponse: 댓글이 수정된 게시글 정보
 
         Raises:
             NotFoundException: 게시글 또는 댓글을 찾을 수 없는 경우
             UnauthorizedException: 작성자가 아닌 경우
         """
-        post = get_or_raise(
-            self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다."
-        )
+        post = get_or_raise(self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다.")
 
-        comment = get_or_raise(
-            self.comment_model.find_by_id(comment_id), "댓글을 찾을 수 없습니다."
-        )
+        comment = get_or_raise(self.comment_model.find_by_id(comment_id), "댓글을 찾을 수 없습니다.")
 
         if comment.post_id != post_id:
             raise NotFoundException("해당 게시글의 댓글이 아닙니다.")
 
-        verify_ownership(
-            comment.author_id, request.author_id, "댓글 수정 권한이 없습니다."
-        )
+        verify_ownership(comment.author_id, request.author_id, "댓글 수정 권한이 없습니다.")
 
         self.comment_model.update(comment_id, request.content)
 
         return self._convert_to_response(post)
 
-    def remove_comment(
-        self, post_id: int, comment_id: int, author_id: int
-    ) -> PostResponse:
+    def remove_comment(self, post_id: int, comment_id: int, author_id: int) -> PostResponse:
         """댓글 삭제 (작성자만 가능)
 
         Args:
@@ -302,19 +269,15 @@ class PostController:
             author_id: 요청자 ID (권한 검증용)
 
         Returns:
-            PostResponse: 댓글이 삭제된 게시글
+            PostResponse: 댓글이 삭제된 게시글 정보
 
         Raises:
             NotFoundException: 게시글 또는 댓글을 찾을 수 없는 경우
             UnauthorizedException: 작성자가 아닌 경우
         """
-        post = get_or_raise(
-            self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다."
-        )
+        post = get_or_raise(self.post_model.find_by_id(post_id), "게시글을 찾을 수 없습니다.")
 
-        comment = get_or_raise(
-            self.comment_model.find_by_id(comment_id), "댓글을 찾을 수 없습니다."
-        )
+        comment = get_or_raise(self.comment_model.find_by_id(comment_id), "댓글을 찾을 수 없습니다.")
 
         if comment.post_id != post_id:
             raise NotFoundException("해당 게시글의 댓글이 아닙니다.")
@@ -322,5 +285,7 @@ class PostController:
         verify_ownership(comment.author_id, author_id, "댓글 삭제 권한이 없습니다.")
 
         self.comment_model.delete(comment_id)
+
+        self.post_model.decrease_comment_count(post_id)
 
         return self._convert_to_response(post)

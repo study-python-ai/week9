@@ -45,10 +45,10 @@ class CreatePostRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "title": "FastAPI 게시글 제목",
-                "content": "FastAPI로 게시판을 만들어봅시다.",
-                "author_id": 1,
-                "img_url": "https://example.com/image.jpg",
+                "title": "FastAPI 게시글 제목",  # 게시글 제목
+                "content": "FastAPI로 게시판을 만들어봅시다.",  # 게시글 내용
+                "author_id": 1,  # 작성자 ID
+                "img_url": "https://example.com/image.jpg",  # 이미지 URL
             }
         }
 
@@ -64,10 +64,10 @@ class UpdatePostRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "title": "수정된 제목",
-                "content": "수정된 내용입니다.",
-                "img_url": "https://example.com/new-image.jpg",
-                "author_id": 1,
+                "title": "수정된 제목",  # 게시글 제목
+                "content": "수정된 내용입니다.",  # 게시글 내용
+                "img_url": "https://example.com/new-image.jpg",  # 이미지 URL
+                "author_id": 1,  # 작성자 ID
             }
         }
 
@@ -80,9 +80,7 @@ class PostStatusResponse(BaseModel):
     comment_count: int = 0
 
     class Config:
-        json_schema_extra = {
-            "example": {"view_count": 42, "like_count": 10, "comment_count": 5}
-        }
+        json_schema_extra = {"example": {"view_count": 42, "like_count": 10, "comment_count": 5}}
 
 
 class CreateCommentRequest(BaseModel):
@@ -95,9 +93,9 @@ class CreateCommentRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "content": "유익한 게시글 감사합니다!",
-                "author_id": 2,
-                "img_url": "https://example.com/profile.jpg",
+                "content": "유익한 게시글 감사합니다!",  # 댓글 내용
+                "author_id": 2,  # 작성자 ID
+                "img_url": "https://example.com/profile.jpg",  # 프로필 이미지 URL
             }
         }
 
@@ -109,9 +107,7 @@ class UpdateCommentRequest(BaseModel):
     author_id: int = Field(..., gt=0, description="요청자 ID (권한 검증용)")
 
     class Config:
-        json_schema_extra = {
-            "example": {"content": "수정된 댓글 내용입니다.", "author_id": 2}
-        }
+        json_schema_extra = {"example": {"content": "수정된 댓글 내용입니다.", "author_id": 2}}  # 댓글 내용, 작성자 ID
 
 
 class CommentResponse(BaseModel):
@@ -155,21 +151,23 @@ class PostResponse(BaseModel):
         from_attributes = True
         json_schema_extra = {
             "example": {
-                "id": 1,
-                "title": "FastAPI 게시글 제목",
+                "id": 1,  # 게시글 ID
+                "title": "FastAPI 게시글 제목",  # 게시글 제목
                 "content": "FastAPI로 게시판을 만들어봅시다.",
-                "author_id": 1,
-                "img_url": "https://example.com/image.jpg",
-                "status": {"view_count": 42, "like_count": 10, "comment_count": 5},
-                "del_yn": "N",
-                "created_at": "2025-01-13T10:30:00",
+                "author_id": 1,  # 작성자 ID
+                "img_url": "https://example.com/image.jpg",  # 이미지 URL
+                "status": {"view_count": 42, "like_count": 10, "comment_count": 5},  # 게시글 통계
+                "del_yn": "N",  # 삭제 여부
+                "created_at": "2025-01-13T10:30:00",  # 생성 일시
                 "comments": [
                     {
-                        "id": 1,
-                        "img_url": "https://example.com/profile.jpg",
+                        "id": 1,  # 댓글 ID
+                        "post_id": 1,  # 게시글 ID
+                        "author_id": 2,  # 작성자 ID
+                        "img_url": "https://example.com/profile.jpg",  # 프로필 이미지 URL
                         "content": "첫 번째 댓글입니다.",
-                    }
-                ],
+                    }  # 댓글 내용
+                ],  # 댓글 목록
             }
         }
 
@@ -185,21 +183,21 @@ class PostListResponse(BaseModel):
             "example": {
                 "posts": [
                     {
-                        "id": 1,
-                        "title": "첫 번째 게시글",
-                        "content": "내용...",
-                        "author_id": 1,
-                        "img_url": None,
+                        "id": 1,  # 게시글 ID
+                        "title": "첫 번째 게시글",  # 게시글 제목
+                        "content": "내용...",  # 게시글 내용
+                        "author_id": 1,  # 작성자 ID
+                        "img_url": None,  # 이미지 URL
                         "status": {
-                            "view_count": 10,
-                            "like_count": 2,
-                            "comment_count": 0,
+                            "view_count": 10,  # 조회수
+                            "like_count": 2,  # 좋아요 수
+                            "comment_count": 0,  # 댓글 수
                         },
-                        "del_yn": "N",
-                        "created_at": "2025-01-13T10:30:00",
-                        "comments": [],
+                        "del_yn": "N",  # 삭제 여부
+                        "created_at": "2025-01-13T10:30:00",  # 생성 일시
+                        "comments": [],  # 댓글 목록
                     }
                 ],
-                "total": 1,
+                "total": 1,  # 총 게시글 수
             }
         }

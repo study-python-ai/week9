@@ -23,12 +23,11 @@ def get_user_controller(
     Returns:
         UserController: 사용자 컨트롤러 인스턴스
     """
+
     return UserController(user_model)
 
 
-@router.post(
-    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(
     request: RegisterUserRequest,
     controller: UserController = Depends(get_user_controller),
@@ -56,9 +55,7 @@ async def register_user(
 
 
 @router.post("/login", response_model=UserResponse, status_code=status.HTTP_200_OK)
-async def login_user(
-    request: LoginUserRequest, controller: UserController = Depends(get_user_controller)
-):
+async def login_user(request: LoginUserRequest, controller: UserController = Depends(get_user_controller)):
     """
         로그인
 
@@ -94,12 +91,8 @@ async def logout_user(controller: UserController = Depends(get_user_controller))
     return controller.logout()
 
 
-@router.get(
-    "/{user_id}/profile", response_model=UserResponse, status_code=status.HTTP_200_OK
-)
-async def get_user_profile(
-    user_id: int, controller: UserController = Depends(get_user_controller)
-):
+@router.get("/{user_id}/profile", response_model=UserResponse, status_code=status.HTTP_200_OK)
+async def get_user_profile(user_id: int, controller: UserController = Depends(get_user_controller)):
     """프로필 조회
 
         user_id로 프로필을 조회합니다.
@@ -119,9 +112,7 @@ async def get_user_profile(
     return controller.get_profile(user_id)
 
 
-@router.patch(
-    "/{user_id}/profile", response_model=UserResponse, status_code=status.HTTP_200_OK
-)
+@router.patch("/{user_id}/profile", response_model=UserResponse, status_code=status.HTTP_200_OK)
 async def update_user_profile(
     user_id: int,
     request: UpdateUserRequest,
@@ -150,9 +141,7 @@ async def update_user_profile(
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_200_OK)
-async def delete_user(
-    user_id: int, controller: UserController = Depends(get_user_controller)
-):
+async def delete_user(user_id: int, controller: UserController = Depends(get_user_controller)):
     """회원 탈퇴
 
     Args:
