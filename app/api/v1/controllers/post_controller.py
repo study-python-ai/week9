@@ -142,6 +142,8 @@ class PostController:
             img_url=request.img_url,
         )
 
+        updated_post = get_or_raise(updated_post, "게시글 수정에 실패했습니다.")
+
         return self._convert_to_response(updated_post)
 
     def delete_post(self, post_id: int, author_id: int) -> dict:

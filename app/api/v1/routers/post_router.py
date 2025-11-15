@@ -78,7 +78,9 @@ async def get_posts(controller: PostController = Depends(get_post_controller)):
 
 
 @router.get("/{post_id}", response_model=PostResponse, status_code=status.HTTP_200_OK)
-async def get_post(post_id: int, controller: PostController = Depends(get_post_controller)):
+async def get_post(
+    post_id: int, controller: PostController = Depends(get_post_controller)
+):
     """게시글 상세 조회
 
     게시글을 조회하고 조회수를 1 증가시킵니다.
@@ -159,10 +161,11 @@ async def delete_post(
     return controller.delete_post(post_id, author_id)
 
 
-@router.post("/{post_id}/like", response_model=PostResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/{post_id}/like", response_model=PostResponse, status_code=status.HTTP_200_OK
+)
 async def like_post(
-    post_id: int,
-    controller: PostController = Depends(get_post_controller),
+    post_id: int, controller: PostController = Depends(get_post_controller)
 ):
     """게시글 좋아요
 
@@ -184,10 +187,11 @@ async def like_post(
     return controller.like_post(post_id)
 
 
-@router.delete("/{post_id}/like", response_model=PostResponse, status_code=status.HTTP_200_OK)
+@router.delete(
+    "/{post_id}/like", response_model=PostResponse, status_code=status.HTTP_200_OK
+)
 async def unlike_post(
-    post_id: int,
-    controller: PostController = Depends(get_post_controller),
+    post_id: int, controller: PostController = Depends(get_post_controller)
 ):
     """게시글 좋아요 취소
 

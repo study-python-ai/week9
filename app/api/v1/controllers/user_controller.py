@@ -85,9 +85,7 @@ class UserController:
         Raises:
             NotFoundException: 사용자를 찾을 수 없는 경우
         """
-        user = get_or_raise(
-            self.user_model.find_by_id(user_id), "사용자를 찾을 수 없습니다."
-        )
+        user = get_or_raise(self.user_model.find_by_id(user_id), "사용자를 찾을 수 없습니다.")
 
         return UserResponse.model_validate(user)
 

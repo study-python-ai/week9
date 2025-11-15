@@ -129,6 +129,7 @@ class PostModel:
 
     def get_by_author(self, author_id: int) -> List[Post]:
         """작성자별 게시글 조회 (삭제되지 않은 것만)"""
+
         return [
             post
             for post in self._posts
