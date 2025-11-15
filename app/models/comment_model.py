@@ -6,6 +6,7 @@ from datetime import datetime
 @dataclass
 class Comment:
     """댓글 모델"""
+
     id: int
     post_id: int
     author_id: int
@@ -21,14 +22,16 @@ class CommentModel:
         self._comments: List[Comment] = []
         self._next_id: int = 1
 
-    def create(self, post_id: int, author_id: int, content: str, img_url: Optional[str] = None) -> Comment:
+    def create(
+        self, post_id: int, author_id: int, content: str, img_url: Optional[str] = None
+    ) -> Comment:
         """댓글 생성"""
         comment = Comment(
             id=self._next_id,
             post_id=post_id,
             author_id=author_id,
             content=content,
-            img_url=img_url
+            img_url=img_url,
         )
         self._comments.append(comment)
         self._next_id += 1
@@ -36,7 +39,9 @@ class CommentModel:
 
     def find_by_id(self, comment_id: int) -> Optional[Comment]:
         """ID로 댓글 조회"""
-        return next((comment for comment in self._comments if comment.id == comment_id), None)
+        return next(
+            (comment for comment in self._comments if comment.id == comment_id), None
+        )
 
     def find_by_post_id(self, post_id: int) -> List[Comment]:
         """게시글의 모든 댓글 조회"""

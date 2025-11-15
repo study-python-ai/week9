@@ -36,6 +36,7 @@ CommentContentStr = Annotated[str, AfterValidator(validate_comment_content)]
 
 class CreatePostRequest(BaseModel):
     """게시글 등록 요청 DTO"""
+
     title: TitleStr = Field(..., description="게시글 제목 (1-100자)")
     content: ContentStr = Field(..., description="게시글 내용 (1-5000자)")
     author_id: int = Field(..., gt=0, description="작성자 ID")
@@ -47,13 +48,14 @@ class CreatePostRequest(BaseModel):
                 "title": "FastAPI 게시글 제목",
                 "content": "FastAPI로 게시판을 만들어봅시다.",
                 "author_id": 1,
-                "img_url": "https://example.com/image.jpg"
+                "img_url": "https://example.com/image.jpg",
             }
         }
 
 
 class UpdatePostRequest(BaseModel):
     """게시글 수정 요청 DTO"""
+
     title: Optional[TitleStr] = Field(None, description="게시글 제목 (1-100자)")
     content: Optional[ContentStr] = Field(None, description="게시글 내용 (1-5000자)")
     img_url: Optional[str] = Field(None, description="이미지 URL")
@@ -65,29 +67,27 @@ class UpdatePostRequest(BaseModel):
                 "title": "수정된 제목",
                 "content": "수정된 내용입니다.",
                 "img_url": "https://example.com/new-image.jpg",
-                "author_id": 1
+                "author_id": 1,
             }
         }
 
 
 class PostStatusResponse(BaseModel):
     """게시글 통계 정보 DTO"""
+
     view_count: int = 0
     like_count: int = 0
     comment_count: int = 0
 
     class Config:
         json_schema_extra = {
-            "example": {
-                "view_count": 42,
-                "like_count": 10,
-                "comment_count": 5
-            }
+            "example": {"view_count": 42, "like_count": 10, "comment_count": 5}
         }
 
 
 class CreateCommentRequest(BaseModel):
     """댓글 생성 요청 DTO"""
+
     content: CommentContentStr = Field(..., description="댓글 내용 (1-1000자)")
     author_id: int = Field(..., gt=0, description="작성자 ID")
     img_url: Optional[str] = Field(None, description="프로필 이미지 URL")
@@ -97,27 +97,26 @@ class CreateCommentRequest(BaseModel):
             "example": {
                 "content": "유익한 게시글 감사합니다!",
                 "author_id": 2,
-                "img_url": "https://example.com/profile.jpg"
+                "img_url": "https://example.com/profile.jpg",
             }
         }
 
 
 class UpdateCommentRequest(BaseModel):
     """댓글 수정 요청 DTO"""
+
     content: CommentContentStr = Field(..., description="댓글 내용 (1-1000자)")
     author_id: int = Field(..., gt=0, description="요청자 ID (권한 검증용)")
 
     class Config:
         json_schema_extra = {
-            "example": {
-                "content": "수정된 댓글 내용입니다.",
-                "author_id": 2
-            }
+            "example": {"content": "수정된 댓글 내용입니다.", "author_id": 2}
         }
 
 
 class CommentResponse(BaseModel):
     """댓글 응답 DTO"""
+
     id: int
     post_id: int
     author_id: int
@@ -134,13 +133,14 @@ class CommentResponse(BaseModel):
                 "author_id": 2,
                 "content": "유익한 게시글 감사합니다!",
                 "img_url": "https://example.com/profile.jpg",
-                "created_at": "2025-11-13T21:00:00"
+                "created_at": "2025-11-13T21:00:00",
             }
         }
 
 
 class PostResponse(BaseModel):
     """게시글 응답 DTO (상세 조회용)"""
+
     id: int
     title: str
     content: str
@@ -160,26 +160,23 @@ class PostResponse(BaseModel):
                 "content": "FastAPI로 게시판을 만들어봅시다.",
                 "author_id": 1,
                 "img_url": "https://example.com/image.jpg",
-                "status": {
-                    "view_count": 42,
-                    "like_count": 10,
-                    "comment_count": 5
-                },
+                "status": {"view_count": 42, "like_count": 10, "comment_count": 5},
                 "del_yn": "N",
                 "created_at": "2025-01-13T10:30:00",
                 "comments": [
                     {
                         "id": 1,
                         "img_url": "https://example.com/profile.jpg",
-                        "content": "첫 번째 댓글입니다."
+                        "content": "첫 번째 댓글입니다.",
                     }
-                ]
+                ],
             }
         }
 
 
 class PostListResponse(BaseModel):
     """게시글 목록 응답 DTO"""
+
     posts: List[PostResponse]
     total: int
 
@@ -196,13 +193,13 @@ class PostListResponse(BaseModel):
                         "status": {
                             "view_count": 10,
                             "like_count": 2,
-                            "comment_count": 0
+                            "comment_count": 0,
                         },
                         "del_yn": "N",
                         "created_at": "2025-01-13T10:30:00",
-                        "comments": []
+                        "comments": [],
                     }
                 ],
-                "total": 1
+                "total": 1,
             }
         }

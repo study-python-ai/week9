@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/v1/posts", tags=["posts"])
 def get_post_controller(
     post_model: PostModel = Depends(get_post_model),
     user_model: UserModel = Depends(get_user_model),
-    comment_model: CommentModel = Depends(get_comment_model)
+    comment_model: CommentModel = Depends(get_comment_model),
 ) -> PostController:
     """게시글 컨트롤러 의존성 주입
 
@@ -43,7 +43,7 @@ async def create_post(
 
     Args:
 
-        request: 게시글 등록 요청 정보
+        request: 게시글 등록 요청
             - title: 게시글 제목 (1-100자)
             - content: 게시글 내용 (1-5000자)
             - author_id: 작성자 ID
@@ -52,7 +52,7 @@ async def create_post(
 
     Returns:
 
-        PostResponse: 생성된 게시글 정보
+        PostResponse: 생성된 게시글
 
     Raises:
 
@@ -92,7 +92,7 @@ async def get_post(
 
     Returns:
 
-        PostResponse: 게시글 정보
+        PostResponse: 게시글
 
     Raises:
 
@@ -114,7 +114,7 @@ async def update_post(
     Args:
 
         post_id: 게시글 ID
-        request: 게시글 수정 요청 정보
+        request: 게시글 수정 요청
             - title: 게시글 제목 (선택)
             - content: 게시글 내용 (선택)
             - img_url: 이미지 URL (선택)
@@ -123,7 +123,7 @@ async def update_post(
 
     Returns:
 
-        PostResponse: 수정된 게시글 정보
+        PostResponse: 수정된 게시글
 
     Raises:
 
@@ -142,7 +142,6 @@ async def delete_post(
     """게시글 삭제
 
     작성자만 게시글을 삭제할 수 있습니다.
-    논리적 삭제(del_yn='Y')가 수행됩니다.
 
     Args:
 
@@ -155,7 +154,7 @@ async def delete_post(
         dict: 성공 메시지
 
     Raises:
-    
+
         NotFoundException: 게시글을 찾을 수 없는 경우
         UnauthorizedException: 작성자가 아닌 경우
     """
@@ -171,7 +170,7 @@ async def like_post(
 ):
     """게시글 좋아요
 
-    게시글의 좋아요 수를 1 증가시킵니다.
+    게시글의 좋아요 수를 1 증가합니다.
 
     Args:
 
@@ -180,7 +179,7 @@ async def like_post(
 
     Returns:
 
-        PostResponse: 좋아요 수가 증가된 게시글 정보
+        PostResponse: 좋아요 수가 증가한 게시글
 
     Raises:
 
@@ -198,7 +197,7 @@ async def unlike_post(
 ):
     """게시글 좋아요 취소
 
-    게시글의 좋아요 수를 1 감소시킵니다.
+    게시글의 좋아요 수를 감소 합니다.
 
     Args:
 
@@ -207,7 +206,7 @@ async def unlike_post(
 
     Returns:
 
-        PostResponse: 좋아요 수가 감소된 게시글 정보
+        PostResponse: 좋아요 수가 감소된 게시글
 
     Raises:
 
@@ -233,7 +232,7 @@ async def add_comment(
     Args:
 
         post_id: 게시글 ID
-        request: 댓글 생성 요청 정보
+        request: 댓글 생성 요청
             - content: 댓글 내용 (1-1000자)
             - author_id: 작성자 ID
             - img_url: 프로필 이미지 URL (선택)
@@ -241,7 +240,7 @@ async def add_comment(
 
     Returns:
 
-        PostResponse: 댓글이 추가된 게시글 정보
+        PostResponse: 댓글이 추가된 게시글
 
     Raises:
 
@@ -269,14 +268,14 @@ async def update_comment(
 
         post_id: 게시글 ID
         comment_id: 댓글 ID
-        request: 댓글 수정 요청 정보
+        request: 댓글 수정 요청
             - content: 댓글 내용 (1-1000자)
             - author_id: 요청자 ID (권한 검증용)
         controller: 게시글 컨트롤러 (의존성 주입)
 
     Returns:
 
-        PostResponse: 댓글이 수정된 게시글 정보
+        PostResponse: 댓글이 수정된 게시글
 
     Raises:
 
@@ -310,7 +309,7 @@ async def remove_comment(
 
     Returns:
 
-        PostResponse: 댓글이 삭제된 게시글 정보
+        PostResponse: 댓글이 삭제된 게시글
 
     Raises:
 

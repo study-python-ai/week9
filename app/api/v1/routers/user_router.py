@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
 
 def get_user_controller(
-    user_model: UserModel = Depends(get_user_model)
+    user_model: UserModel = Depends(get_user_model),
 ) -> UserController:
     """사용자 컨트롤러 의존성 주입
 

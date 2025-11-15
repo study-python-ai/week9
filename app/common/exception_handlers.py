@@ -40,9 +40,19 @@ async def validation_exception_handler(
 
         TODO : 메시지, 메시지코드 추가
     """
+    errors = []
+    for error in exc.errors():
+        error_dict = {
+            "type": error["type"],
+            "loc": error["loc"],
+            "msg": error["msg"],
+            "input": error.get("input"),
+        }
+        errors.append(error_dict)
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": exc.errors()},
+        content={"detail": errors},
     )
 
 
