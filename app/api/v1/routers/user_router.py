@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Request
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 
 from app.api.v1.controllers.user_controller import UserController
 
