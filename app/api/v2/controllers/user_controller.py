@@ -7,6 +7,7 @@ from app.core.exceptions.exceptions import (
 from app.core.security.password import hash_password, verify_password
 from app.core.security.security import create_access_token
 from app.core.validators import ensure_unique, get_or_raise
+from app.models.image_model import ImageModel, ImageType
 from app.models.user_model import User, UserModel
 from app.schemas import (
     ChangePasswordRequest,
@@ -21,21 +22,12 @@ from app.schemas import (
 class UserController:
     """v2 사용자 컨트롤러 클래스"""
 
-    def __init__(self, user_model: UserModel):
+    def __init__(self, user_model: UserModel, image_model: ImageModel):
         self.user_model = user_model
+        self.image_model = image_model
 
     def register(self, request: RegisterUserRequest) -> UserResponse:
-        """회원가입
-
-        Args:
-            request: 회원가입 요청
-
-        Returns:
-            UserResponse: 생성된 사용자
-
-        Raises:
-            DuplicateException: 이미 존재하는 이메일인 경우
-        """
+        """회원가입"""
         ensure_unique(
             self.user_model.exists_by_email(request.email),
             "이미 존재하는 이메일입니다.",
@@ -47,8 +39,22 @@ class UserController:
             email=request.email,
             password=hashed_password,
             nick_name=request.nick_name,
-            image_url=request.image_url,
         )
+
+        if request.image_id:
+            temp_image = get_or_raise(
+                self.image_model.find_by_id(request.image_id),
+                "이미지를 찾을 수 없습니다.",
+                error_code=ErrorCode.NOT_FOUND,
+            )
+
+            if temp_image.entity_type == "temp":
+                self.image_model.update_entity(
+                    image_id=request.image_id,
+                    entity_type=ImageType.USER.value,
+                    entity_id=user.id,
+                    order=0,
+                )
 
         return UserResponse.model_validate(user)
 
@@ -116,20 +122,7 @@ class UserController:
     def update_profile(
         self, user_id: int, request: UpdateUserRequest, current_user: User
     ) -> UserResponse:
-        """프로필 수정 (권한 확인)
-
-        Args:
-            user_id: 사용자 ID
-            request: 수정 요청
-            current_user: 인증된 사용자
-
-        Returns:
-            UserResponse: 수정된 사용자 정보
-
-        Raises:
-            NotFoundException: 사용자를 찾을 수 없는 경우
-            ForbiddenException: 권한이 없는 경우
-        """
+        """프로필 수정"""
         if current_user.id != user_id:
             raise ForbiddenException(
                 "사용자 정보를 수정할 권한이 없습니다.",
@@ -146,11 +139,26 @@ class UserController:
             self.user_model.update(
                 user_id=user_id,
                 nick_name=request.nick_name,
-                image_url=request.image_url,
             ),
             "사용자 정보 수정에 실패했습니다.",
             error_code=ErrorCode.USER_NOT_FOUND,
         )
+
+        if request.image_id:
+            temp_image = get_or_raise(
+                self.image_model.find_by_id(request.image_id),
+                "이미지를 찾을 수 없습니다.",
+                error_code=ErrorCode.NOT_FOUND,
+            )
+
+            if temp_image.uploaded_by == user_id and temp_image.entity_type == "temp":
+                self.image_model.delete_by_entity(ImageType.USER.value, user_id)
+                self.image_model.update_entity(
+                    image_id=request.image_id,
+                    entity_type=ImageType.USER.value,
+                    entity_id=user_id,
+                    order=0,
+                )
 
         return UserResponse.model_validate(updated_user)
 

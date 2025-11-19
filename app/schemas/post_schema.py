@@ -40,14 +40,14 @@ class CreatePostRequest(BaseModel):
 
     title: TitleStr = Field(..., description="게시글 제목 (1-26자)")
     content: ContentStr = Field(..., description="게시글 내용 (1-5000자)")
-    img_url: Optional[str] = Field(None, description="이미지 URL")
+    image_ids: Optional[List[int]] = Field(default=[], description="이미지 ID 목록")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "title": "FastAPI 게시글 제목",
                 "content": "FastAPI로 게시판을 만들어봅시다.",
-                "img_url": "https://example.com/image.jpg",
+                "image_ids": [1, 2],
             }
         }
 
@@ -57,14 +57,14 @@ class UpdatePostRequest(BaseModel):
 
     title: Optional[TitleStr] = Field(None, description="게시글 제목 (1-26자)")
     content: Optional[ContentStr] = Field(None, description="게시글 내용 (1-5000자)")
-    img_url: Optional[str] = Field(None, description="이미지 URL")
+    image_ids: Optional[List[int]] = Field(None, description="이미지 ID 목록")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "title": "수정된 제목",
                 "content": "수정된 내용입니다.",
-                "img_url": "https://example.com/new-image.jpg",
+                "image_ids": [1, 2],
             }
         }
 
@@ -86,13 +86,11 @@ class CreateCommentRequest(BaseModel):
     """v2 댓글 생성 요청 DTO (JWT 인증)"""
 
     content: CommentContentStr = Field(..., description="댓글 내용 (1-1000자)")
-    img_url: Optional[str] = Field(None, description="프로필 이미지 URL")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "content": "유익한 게시글 감사합니다!",
-                "img_url": "https://example.com/profile.jpg",
             }
         }
 
@@ -106,14 +104,31 @@ class UpdateCommentRequest(BaseModel):
         json_schema_extra = {"example": {"content": "수정된 댓글 내용입니다."}}
 
 
+class CommentAuthor(BaseModel):
+    """댓글 작성자 정보 DTO"""
+
+    id: int
+    nick_name: str
+    image_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": 2,
+                "nick_name": "홍길동",
+                "image_url": "https://example.com/profile.jpg",
+            }
+        }
+
+
 class CommentResponse(BaseModel):
     """댓글 응답 DTO"""
 
     id: int
     post_id: int
-    author_id: int
+    author: CommentAuthor
     content: str
-    img_url: Optional[str] = None
     created_at: str
 
     class Config:
@@ -122,9 +137,12 @@ class CommentResponse(BaseModel):
             "example": {
                 "id": 1,
                 "post_id": 1,
-                "author_id": 2,
+                "author": {
+                    "id": 2,
+                    "nick_name": "홍길동",
+                    "image_url": "https://example.com/profile.jpg",
+                },
                 "content": "유익한 게시글 감사합니다!",
-                "img_url": "https://example.com/profile.jpg",
                 "created_at": "2025-11-13 21:00:00",
             }
         }

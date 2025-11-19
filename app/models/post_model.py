@@ -28,9 +28,8 @@ class Post(Base, TimestampMixin, SoftDeleteMixin):
     author_id: Mapped[int] = mapped_column(
         ForeignKey("tb_user.id"), nullable=False, index=True
     )
-    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    title: Mapped[str] = mapped_column(String(26), nullable=False)
     content: Mapped[str] = mapped_column(String(5000), nullable=False)
-    img_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     author: Mapped["User"] = relationship(
         "User", back_populates="posts", foreign_keys=[author_id]
@@ -38,6 +37,27 @@ class Post(Base, TimestampMixin, SoftDeleteMixin):
     comments: Mapped[List["Comment"]] = relationship(
         "Comment", back_populates="post", foreign_keys="Comment.post_id"
     )
+
+    @property
+    def images(self) -> List[str]:
+        """게시글 이미지 URL 목록 조회"""
+        from sqlalchemy.orm import object_session
+
+        from app.models.image_model import ImageModel
+
+        session = object_session(self)
+        if not session:
+            return []
+
+        image_model = ImageModel(session)
+        images = image_model.find_post_images(self.id)
+        return [img.url for img in images]
+
+    @property
+    def img_url(self) -> Optional[str]:
+        """첫 번째 이미지 URL 조회 (하위 호환성)"""
+        images = self.images
+        return images[0] if images else None
 
     def _change_title(self, title: str) -> None:
         """제목 변경"""
@@ -47,26 +67,17 @@ class Post(Base, TimestampMixin, SoftDeleteMixin):
         """내용 변경"""
         self.content = content
 
-    def _change_img_url(self, img_url: str) -> None:
-        """이미지 URL 변경"""
-        self.img_url = img_url
-
     def delete(self) -> None:
         """게시글 논리적 삭제"""
         self.del_yn = DeleteStatus.DELETED.value
 
-    def change_post(
-        self, title: Optional[str], content: Optional[str], img_url: Optional[str]
-    ) -> 'Post':
+    def change_post(self, title: Optional[str], content: Optional[str]) -> 'Post':
         """게시글 정보 변경"""
         if title is not None:
             self._change_title(title)
 
         if content is not None:
             self._change_content(content)
-
-        if img_url is not None:
-            self._change_img_url(img_url)
 
         self.updated_at = datetime.now().isoformat()
         return self
@@ -111,11 +122,9 @@ class PostModel:
         stmt = select(Post).where(Post.active_filter(), Post.id == post_id)
         return self.db.execute(stmt).scalar_one_or_none()
 
-    def create(
-        self, title: str, content: str, author_id: int, img_url: Optional[str] = None
-    ) -> Post:
+    def create(self, title: str, content: str, author_id: int) -> Post:
         """게시글 생성"""
-        post = Post(author_id=author_id, title=title, content=content, img_url=img_url)
+        post = Post(author_id=author_id, title=title, content=content)
 
         self.db.add(post)
         self.db.commit()
@@ -124,11 +133,7 @@ class PostModel:
         return post
 
     def update(
-        self,
-        id: int,
-        title: Optional[str] = None,
-        content: Optional[str] = None,
-        img_url: Optional[str] = None,
+        self, id: int, title: Optional[str] = None, content: Optional[str] = None
     ) -> Optional[Post]:
         """게시글 수정"""
         post = self.find_by_id(id)
@@ -136,7 +141,7 @@ class PostModel:
         if not post:
             return None
 
-        post.change_post(title, content, img_url)
+        post.change_post(title, content)
         self.db.commit()
         self.db.refresh(post)
 
@@ -261,25 +266,20 @@ class PostModel:
         )
         return list(self.db.execute(stmt).scalars().all())
 
-    def add_comment(
-        self, post_id: int, author_id: int, content: str, img_url: Optional[str] = None
-    ) -> "Comment":
+    def add_comment(self, post_id: int, author_id: int, content: str) -> "Comment":
         """댓글 추가 (Aggregate 패턴)
 
         Args:
             post_id: 게시글 ID
             author_id: 작성자 ID
             content: 댓글 내용
-            img_url: 이미지 URL (선택)
 
         Returns:
             Comment: 생성된 댓글
         """
         from app.models.comment_model import Comment
 
-        comment = Comment(
-            post_id=post_id, author_id=author_id, content=content, img_url=img_url
-        )
+        comment = Comment(post_id=post_id, author_id=author_id, content=content)
 
         self.db.add(comment)
         self.db.commit()

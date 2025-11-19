@@ -5,6 +5,7 @@ from app.models.post_model import PostModel
 from app.models.comment_model import CommentModel
 from app.models.like_model import LikeModel
 from app.models.view_model import ViewModel
+from app.models.image_model import ImageModel
 from app.core.db.database import SessionLocal
 
 
@@ -66,6 +67,18 @@ def get_view_model(db: Session) -> ViewModel:
         ViewModel: 조회 모델 인스턴스
     """
     return ViewModel(db)
+
+
+def get_image_model(db: Session) -> ImageModel:
+    """이미지 모델 의존성
+
+    Args:
+        db: 데이터베이스 세션
+
+    Returns:
+        ImageModel: 이미지 모델 인스턴스
+    """
+    return ImageModel(db)
 
 
 def get_db() -> Generator[Session, None, None]:

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.api.v2.controllers.user_controller import UserController
-from app.core.db.dependencies import get_db, get_user_model
+from app.core.db.dependencies import get_db, get_image_model, get_user_model
 from app.core.security.dependencies import get_current_user
 from app.models.user_model import User
 from app.schemas import (
@@ -25,16 +25,8 @@ router = APIRouter(prefix="/api/v2/users", tags=["v2-users"])
 
 
 def get_user_controller(db: Session = Depends(get_db)) -> UserController:
-    """
-    UserController 의존성 주입 함수.
-
-    Args:
-        db: 데이터베이스 세션
-
-    Returns:
-        UserController: 사용자 컨트롤러 인스턴스
-    """
-    return UserController(get_user_model(db))
+    """UserController 의존성 주입"""
+    return UserController(get_user_model(db), get_image_model(db))
 
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)

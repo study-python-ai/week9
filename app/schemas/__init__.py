@@ -1,4 +1,5 @@
 from app.schemas.post_schema import (
+    CommentAuthor,
     CommentResponse,
     CreateCommentRequest,
     CreatePostRequest,
@@ -16,6 +17,11 @@ from app.schemas.user_schema import (
     UpdateUserRequest,
     UserResponse,
 )
+from app.schemas.image_schema import (
+    ImageResponse,
+    UploadImageResponse,
+    MultipleUploadImageResponse,
+)
 
 __all__ = [
     "CreatePostRequest",
@@ -23,6 +29,7 @@ __all__ = [
     "PostStatusResponse",
     "CreateCommentRequest",
     "UpdateCommentRequest",
+    "CommentAuthor",
     "CommentResponse",
     "PostResponse",
     "PostListResponse",
@@ -33,4 +40,7 @@ __all__ = [
     "UpdateUserRequest",
     "ChangePasswordRequest",
     "UserResponse",
+    "ImageResponse",
+    "UploadImageResponse",
+    "MultipleUploadImageResponse",
 ]

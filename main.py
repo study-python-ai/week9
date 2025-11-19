@@ -6,6 +6,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v2.routers import post_router as v2_post_router
 from app.api.v2.routers import user_router as v2_user_router
+from app.api.v2.routers import image_router as v2_image_router
 from app.core.exceptions.exception_handlers import (
     general_exception_handler,
     http_exception_handler,
@@ -37,6 +38,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 app.include_router(v2_user_router.router)
 app.include_router(v2_post_router.router)
+app.include_router(v2_image_router.router)
 
 
 @app.get("/", tags=["root"])

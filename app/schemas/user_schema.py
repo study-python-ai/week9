@@ -42,7 +42,7 @@ class RegisterUserRequest(BaseModel):
     email: EmailStr = Field(..., description="사용자 이메일")
     password: PasswordStr = Field(..., description="비밀번호 (6-20자)")
     nick_name: NickNameStr = Field(..., description="닉네임 (2-20자)")
-    image_url: Optional[str] = Field(None, description="프로필 이미지 URL")
+    image_id: Optional[int] = Field(None, description="프로필 이미지 ID")
 
     class Config:
         json_schema_extra = {
@@ -50,7 +50,7 @@ class RegisterUserRequest(BaseModel):
                 "email": "user@example.com",
                 "password": "password123",
                 "nick_name": "홍길동",
-                "image_url": "https://example.com/profile.jpg",
+                "image_id": 1,
             }
         }
 
@@ -71,13 +71,13 @@ class UpdateUserRequest(BaseModel):
     """프로필 수정 요청 DTO"""
 
     nick_name: Optional[NickNameStr] = Field(None, description="닉네임 (2-20자)")
-    image_url: Optional[str] = Field(None, description="프로필 이미지 URL")
+    image_id: Optional[int] = Field(None, description="프로필 이미지 ID")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "nick_name": "새로운닉네임",
-                "image_url": "https://example.com/new-profile.jpg",
+                "image_id": 1,
             }
         }
 

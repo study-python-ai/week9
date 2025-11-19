@@ -30,7 +30,6 @@ class Comment(Base, TimestampMixin, SoftDeleteMixin):
         ForeignKey("tb_user.id"), nullable=False, index=True
     )
     content: Mapped[str] = mapped_column(String(1000), nullable=False)
-    img_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     author: Mapped["User"] = relationship(
         "User", back_populates="comments", foreign_keys=[author_id]
@@ -38,6 +37,11 @@ class Comment(Base, TimestampMixin, SoftDeleteMixin):
     post: Mapped["Post"] = relationship(
         "Post", back_populates="comments", foreign_keys=[post_id]
     )
+
+    @property
+    def img_url(self) -> Optional[str]:
+        """댓글 작성자의 프로필 이미지 URL (하위 호환성)"""
+        return self.author.image_url if self.author else None
 
     def delete(self) -> None:
         """댓글 논리적 삭제"""
@@ -51,7 +55,7 @@ class CommentModel:
         self.db = db
 
     def create(
-        self, post_id: int, author_id: int, content: str, img_url: Optional[str] = None
+        self, post_id: int, author_id: int, content: str
     ) -> Comment:
         """댓글 생성
 
@@ -59,13 +63,12 @@ class CommentModel:
             post_id: 게시글 ID
             author_id: 작성자 ID
             content: 댓글 내용
-            img_url: 이미지 URL (선택)
 
         Returns:
             Comment: 생성된 댓글
         """
         comment = Comment(
-            post_id=post_id, author_id=author_id, content=content, img_url=img_url
+            post_id=post_id, author_id=author_id, content=content
         )
 
         self.db.add(comment)

@@ -10,6 +10,7 @@ from app.core.validators import get_or_raise
 from app.models.post_model import Post, PostModel
 from app.models.user_model import User, UserModel
 from app.schemas import (
+    CommentAuthor,
     CommentResponse,
     CreateCommentRequest,
     CreatePostRequest,
@@ -35,9 +36,12 @@ class PostController:
             CommentResponse(
                 id=comment.id,
                 post_id=comment.post_id,
-                author_id=comment.author_id,
+                author=CommentAuthor(
+                    id=comment.author.id,
+                    nick_name=comment.author.nick_name,
+                    image_url=comment.author.image_url,
+                ),
                 content=comment.content,
-                img_url=comment.img_url,
                 created_at=comment.created_at,
             )
             for comment in comments
@@ -74,11 +78,16 @@ class PostController:
             PostResponse: 생성된 게시글
         """
         post = self.post_model.create(
-            title=request.title,
-            content=request.content,
-            author_id=current_user.id,
-            img_url=request.img_url,
+            title=request.title, content=request.content, author_id=current_user.id
         )
+
+        if request.image_ids:
+            from app.models.image_model import ImageModel
+
+            image_model = ImageModel(self.post_model.db)
+            for idx, image_id in enumerate(request.image_ids):
+                image_model.update_entity(image_id, "post", post.id, order=idx)
+
         return self._convert_to_response(post)
 
     def get_posts(self) -> PostListResponse:
@@ -131,10 +140,7 @@ class PostController:
             )
 
         updated_post = self.post_model.update(
-            id=post_id,
-            title=request.title,
-            content=request.content,
-            img_url=request.img_url,
+            id=post_id, title=request.title, content=request.content
         )
 
         updated_post = get_or_raise(
@@ -142,6 +148,15 @@ class PostController:
             "게시글 수정에 실패했습니다.",
             error_code=ErrorCode.POST_NOT_FOUND,
         )
+
+        if request.image_ids is not None:
+            from app.models.image_model import ImageModel
+
+            image_model = ImageModel(self.post_model.db)
+            image_model.delete_by_entity("post", post_id)
+
+            for idx, image_id in enumerate(request.image_ids):
+                image_model.update_entity(image_id, "post", post_id, order=idx)
 
         return self._convert_to_response(updated_post)
 
@@ -210,10 +225,7 @@ class PostController:
         )
 
         self.post_model.add_comment(
-            post_id=post_id,
-            author_id=current_user.id,
-            content=request.content,
-            img_url=request.img_url,
+            post_id=post_id, author_id=current_user.id, content=request.content
         )
 
         return self._convert_to_response(post)

@@ -1,13 +1,15 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
+
 from sqlalchemy import String, select
-from sqlalchemy.orm import Mapped, mapped_column, Session, relationship
-from app.models.base import Base, TimestampMixin, SoftDeleteMixin
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
+
+from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
-    from app.models.post_model import Post
     from app.models.comment_model import Comment
+    from app.models.post_model import Post
 
 
 class DeleteStatus(str, Enum):
@@ -24,11 +26,10 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False, index=True
+        String(100), unique=True, nullable=False, index=True
     )
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     nick_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     posts: Mapped[List["Post"]] = relationship(
         "Post", back_populates="author", foreign_keys="Post.author_id"
@@ -37,13 +38,24 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
         "Comment", back_populates="author", foreign_keys="Comment.author_id"
     )
 
+    @property
+    def image_url(self) -> Optional[str]:
+        """프로필 이미지 URL 조회"""
+        from sqlalchemy.orm import object_session
+
+        from app.models.image_model import ImageModel
+
+        session = object_session(self)
+        if not session:
+            return None
+
+        image_model = ImageModel(session)
+        image = image_model.find_user_profile_image(self.id)
+        return image.url if image else None
+
     def _change_nick_name(self, nick_name: str) -> None:
         """닉네임 변경"""
         self.nick_name = nick_name
-
-    def _change_image_url(self, image_url: str) -> None:
-        """이미지 URL 변경"""
-        self.image_url = image_url
 
     def _change_password(self, password: str) -> None:
         """비밀번호 변경"""
@@ -54,17 +66,11 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
         self.del_yn = DeleteStatus.DELETED.value
 
     def change_user(
-        self,
-        nick_name: Optional[str] = None,
-        image_url: Optional[str] = None,
-        password: Optional[str] = None,
+        self, nick_name: Optional[str] = None, password: Optional[str] = None
     ) -> 'User':
         """사용자 정보 변경"""
         if nick_name is not None:
             self._change_nick_name(nick_name)
-
-        if image_url is not None:
-            self._change_image_url(image_url)
 
         if password is not None:
             self._change_password(password)
@@ -88,23 +94,18 @@ class UserModel:
         stmt = select(User).where(User.active_filter())
         return list(self.db.execute(stmt).scalars().all())
 
-    def create(
-        self, email: str, password: str, nick_name: str, image_url: Optional[str] = None
-    ) -> User:
+    def create(self, email: str, password: str, nick_name: str) -> User:
         """사용자 생성
 
         Args:
             email: 이메일
             password: 비밀번호
             nick_name: 닉네임
-            image_url: 프로필 이미지 URL (선택)
 
         Returns:
             User: 생성된 사용자
         """
-        user = User(
-            email=email, password=password, nick_name=nick_name, image_url=image_url
-        )
+        user = User(email=email, password=password, nick_name=nick_name)
 
         self.db.add(user)
         self.db.commit()
@@ -151,7 +152,6 @@ class UserModel:
         self,
         user_id: int,
         nick_name: Optional[str] = None,
-        image_url: Optional[str] = None,
         password: Optional[str] = None,
     ) -> Optional[User]:
         """사용자 정보 수정
@@ -159,7 +159,6 @@ class UserModel:
         Args:
             user_id: 사용자 ID
             nick_name: 닉네임 (선택)
-            image_url: 이미지 URL (선택)
             password: 비밀번호 (선택)
 
         Returns:
@@ -170,7 +169,7 @@ class UserModel:
         if not user:
             return None
 
-        user.change_user(nick_name, image_url, password)
+        user.change_user(nick_name, password)
         self.db.commit()
         self.db.refresh(user)
 
