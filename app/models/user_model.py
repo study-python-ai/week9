@@ -1,7 +1,13 @@
-from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
+from sqlalchemy import String, select
+from sqlalchemy.orm import Mapped, mapped_column, Session, relationship
+from app.models.base import Base, TimestampMixin, SoftDeleteMixin
+
+if TYPE_CHECKING:
+    from app.models.post_model import Post
+    from app.models.comment_model import Comment
 
 
 class DeleteStatus(str, Enum):
@@ -11,18 +17,25 @@ class DeleteStatus(str, Enum):
     DELETED = "Y"
 
 
-@dataclass
-class User:
+class User(Base, TimestampMixin, SoftDeleteMixin):
     """사용자 모델"""
 
-    id: int = 0
-    email: str = ""
-    password: str = ""
-    nick_name: str = ""
-    image_url: Optional[str] = None
-    del_yn: str = field(default=DeleteStatus.NOT_DELETED.value)
-    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    __tablename__ = "tb_user"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(
+        String(255), unique=True, nullable=False, index=True
+    )
+    password: Mapped[str] = mapped_column(String(255), nullable=False)
+    nick_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    posts: Mapped[List["Post"]] = relationship(
+        "Post", back_populates="author", foreign_keys="Post.author_id"
+    )
+    comments: Mapped[List["Comment"]] = relationship(
+        "Comment", back_populates="author", foreign_keys="Comment.author_id"
+    )
 
     def _change_nick_name(self, nick_name: str) -> None:
         """닉네임 변경"""
@@ -60,66 +73,11 @@ class User:
         return self
 
 
-@dataclass
-class Users:
-    """사용자 DB 모델"""
-
-    __tablename__ = 'tb_user'
-
-    def __init__(self, users: List[User], condition=None):
-        self._users = users
-        self.condition = condition
-
-    def __iter__(self):
-        return iter(self._users)
-
-    def __len__(self):
-        return len(self._users)
-
-    def __getitem__(self, index):
-        return self._users[index]
-
-    def __add__(self, other):
-        return Users(self._users + other._users)
-
-    def append(self, user: User, next_id: int) -> None:
-        """사용자 추가
-
-        Args:
-            user: 추가할 사용자
-            next_id: 할당할 ID
-        """
-        user.id = next_id
-        self._users.append(user)
-
-    def get(self, condition) -> 'Users':
-        """조건에 맞는 사용자 필터링"""
-        users: List[User] = [user for user in self._users if condition(user)]
-        return Users(users, condition=condition)
-
-    def get_condition_not_delete(self, condition) -> 'Users':
-        """비활성화되지 않은 사용자만 필터링"""
-        return self.get(
-            lambda user: user.del_yn == DeleteStatus.NOT_DELETED.value
-            and condition(user)
-        )
-
-    def get_user(self, user_id: int) -> Optional[User]:
-        """사용자 단건 조회"""
-        users = self.get_condition_not_delete(lambda user: user.id == user_id)
-        return users._users[0] if len(users) > 0 else None
-
-    def to_list(self) -> List[User]:
-        """사용자 리스트 반환"""
-        return self._users
-
-
 class UserModel:
     """사용자 데이터 관리"""
 
-    def __init__(self):
-        self._users: Users = Users([])
-        self._next_id: int = 1
+    def __init__(self, db: Session):
+        self.db = db
 
     def find_users(self) -> List[User]:
         """전체 사용자 목록 조회
@@ -127,9 +85,8 @@ class UserModel:
         Returns:
             List[User]: 활성 사용자 목록
         """
-        return self._users.get(
-            lambda user: user.del_yn == DeleteStatus.NOT_DELETED.value
-        ).to_list()
+        stmt = select(User).where(User.active_filter())
+        return list(self.db.execute(stmt).scalars().all())
 
     def create(
         self, email: str, password: str, nick_name: str, image_url: Optional[str] = None
@@ -149,8 +106,9 @@ class UserModel:
             email=email, password=password, nick_name=nick_name, image_url=image_url
         )
 
-        self._users.append(user, self._next_id)
-        self._next_id += 1
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
 
         return user
 
@@ -163,8 +121,8 @@ class UserModel:
         Returns:
             Optional[User]: 사용자 (없으면 None)
         """
-        users = self._users.get_condition_not_delete(lambda user: user.email == email)
-        return users._users[0] if len(users) > 0 else None
+        stmt = select(User).where(User.active_filter(), User.email == email)
+        return self.db.execute(stmt).scalar_one_or_none()
 
     def find_by_id(self, user_id: int) -> Optional[User]:
         """ID로 사용자 조회
@@ -175,7 +133,8 @@ class UserModel:
         Returns:
             Optional[User]: 사용자 (없으면 None)
         """
-        return self._users.get_user(user_id)
+        stmt = select(User).where(User.active_filter(), User.id == user_id)
+        return self.db.execute(stmt).scalar_one_or_none()
 
     def exists_by_email(self, email: str) -> bool:
         """이메일 존재 여부 확인
@@ -211,10 +170,14 @@ class UserModel:
         if not user:
             return None
 
-        return user.change_user(nick_name, image_url, password)
+        user.change_user(nick_name, image_url, password)
+        self.db.commit()
+        self.db.refresh(user)
+
+        return user
 
     def delete(self, user_id: int) -> bool:
-        """사용자 삭제 (논리적 삭제 - del_yn='N')
+        """사용자 삭제 (논리적 삭제 - del_yn='Y')
 
         Args:
             user_id: 사용자 ID
@@ -228,4 +191,5 @@ class UserModel:
             return False
 
         user.delete()
+        self.db.commit()
         return True

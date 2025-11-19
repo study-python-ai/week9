@@ -1,13 +1,13 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
 
 from app.api.v2.controllers.post_controller import PostController
-from app.common.dependencies import get_current_user
-from app.dependencies import get_comment_model, get_like_model, get_post_model, get_user_model
-from app.models.comment_model import CommentModel
-from app.models.like_model import LikeModel
-from app.models.post_model import PostModel
-from app.models.user_model import User, UserModel
-from app.schemas.v2 import (
+from app.core.db.dependencies import get_db, get_post_model, get_user_model
+from app.core.security.dependencies import get_current_user, get_optional_current_user
+from app.models.user_model import User
+from app.schemas import (
     CreateCommentRequest,
     CreatePostRequest,
     PostListResponse,
@@ -19,18 +19,34 @@ from app.schemas.v2 import (
 router = APIRouter(prefix="/api/v2/posts", tags=["v2-posts"])
 
 
-def get_post_controller(
-    post_model: PostModel = Depends(get_post_model),
-    user_model: UserModel = Depends(get_user_model),
-    comment_model: CommentModel = Depends(get_comment_model),
-    like_model: LikeModel = Depends(get_like_model),
-) -> PostController:
-    return PostController(post_model, user_model, comment_model, like_model)
+def get_post_controller(db: Session = Depends(get_db)) -> PostController:
+    """
+    PostController 의존성 주입 함수
+
+    Aggregate 패턴을 적용하여 PostController 인스턴스를 생성
+
+    Args:
+        db: 데이터베이스 세션
+
+    Returns:
+        PostController: 게시글 컨트롤러 인스턴스
+    """
+    return PostController(get_post_model(db), get_user_model(db))
 
 
 @router.get("", response_model=PostListResponse)
 def get_posts(controller: PostController = Depends(get_post_controller)):
-    """게시글 목록 조회"""
+    """
+    게시글 목록 조회
+
+    모든 게시글 목록을 조회
+
+    Args:
+        controller: 게시글 컨트롤러
+
+    Returns:
+        PostListResponse: 게시글 목록 응답
+    """
     return controller.get_posts()
 
 
@@ -40,14 +56,49 @@ def create_post(
     current_user: User = Depends(get_current_user),
     controller: PostController = Depends(get_post_controller),
 ):
-    """게시글 생성 (인증 필요)"""
+    """
+    게시글 생성
+
+    인증된 사용자만 게시글을 작성
+
+    Args:
+        request: 게시글 생성 요청 데이터
+        current_user: 현재 인증된 사용자
+        controller: 게시글 컨트롤러
+
+    Returns:
+        PostResponse: 생성된 게시글 응답
+
+    Raises:
+        HTTPException: 인증되지 않은 경우 401 에러
+    """
     return controller.create_post(request, current_user)
 
 
 @router.get("/{id}", response_model=PostResponse)
-def get_post(id: int, controller: PostController = Depends(get_post_controller)):
-    """게시글 상세 조회"""
-    return controller.get_post(id)
+def get_post(
+    id: int,
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    controller: PostController = Depends(get_post_controller),
+):
+    """
+    게시글 상세 조회
+
+    사용자 로그인시 조회수 증가
+    사용자 비로그인시 조회수 증가하지 않음
+
+    Args:
+        id: 조회할 게시글 ID
+        current_user: 현재 인증된 사용자
+        controller: 게시글 컨트롤러
+
+    Returns:
+        PostResponse: 게시글 상세 응답
+
+    Raises:
+        HTTPException: 게시글을 찾을 수 없는 경우 404 에러
+    """
+    return controller.get_post(id, current_user)
 
 
 @router.patch("/{id}", response_model=PostResponse)
@@ -57,7 +108,24 @@ def update_post(
     current_user: User = Depends(get_current_user),
     controller: PostController = Depends(get_post_controller),
 ):
-    """게시글 수정"""
+    """
+    게시글 수정
+
+    게시글 작성자만 자신의 게시글을 수정
+
+    Args:
+        id: 수정할 게시글 ID
+        request: 게시글 수정 요청 데이터
+        current_user: 현재 인증된 사용자
+        controller: 게시글 컨트롤러
+
+    Returns:
+        PostResponse: 수정된 게시글 응답
+
+    Raises:
+        HTTPException: 게시글을 찾을 수 없는 경우 404 에러
+        HTTPException: 권한이 없는 경우 403 에러
+    """
     return controller.update_post(id, request, current_user)
 
 
@@ -67,7 +135,23 @@ def delete_post(
     current_user: User = Depends(get_current_user),
     controller: PostController = Depends(get_post_controller),
 ):
-    """게시글 삭제"""
+    """
+    게시글 삭제
+
+    게시글 작성자만 자신의 게시글을 삭제
+
+    Args:
+        id: 삭제할 게시글 ID
+        current_user: 현재 인증된 사용자
+        controller: 게시글 컨트롤러
+
+    Returns:
+        None: 204 No Content 응답
+
+    Raises:
+        HTTPException: 게시글을 찾을 수 없는 경우 404 에러
+        HTTPException: 권한이 없는 경우 403 에러
+    """
     controller.delete_post(id, current_user)
 
 

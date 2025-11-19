@@ -1,13 +1,14 @@
-from app.common.error_codes import ErrorCode
-from app.common.exceptions import (
+from app.core.exceptions.error_codes import ErrorCode
+from app.core.exceptions.exceptions import (
     BadRequestException,
     ForbiddenException,
     UnauthorizedException,
 )
-from app.common.validators import ensure_unique, get_or_raise
-from app.core.security import create_access_token
+from app.core.security.password import hash_password, verify_password
+from app.core.security.security import create_access_token
+from app.core.validators import ensure_unique, get_or_raise
 from app.models.user_model import User, UserModel
-from app.schemas.common import (
+from app.schemas import (
     ChangePasswordRequest,
     LoginUserRequest,
     RegisterUserRequest,
@@ -15,7 +16,6 @@ from app.schemas.common import (
     UpdateUserRequest,
     UserResponse,
 )
-from app.utils.password import hash_password, verify_password
 
 
 class UserController:

@@ -1,7 +1,13 @@
-from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
+from sqlalchemy import String, ForeignKey, select
+from sqlalchemy.orm import Mapped, mapped_column, Session, relationship
+from app.models.base import Base, TimestampMixin, SoftDeleteMixin
+
+if TYPE_CHECKING:
+    from app.models.user_model import User
+    from app.models.post_model import Post
 
 
 class DeleteStatus(str, Enum):
@@ -11,84 +17,38 @@ class DeleteStatus(str, Enum):
     DELETED = "Y"
 
 
-@dataclass
-class Comment:
+class Comment(Base, TimestampMixin, SoftDeleteMixin):
     """댓글 모델"""
 
-    id: int = field(init=False)
-    post_id: int
-    author_id: int
-    content: str
-    img_url: Optional[str] = None
-    del_yn: str = DeleteStatus.NOT_DELETED.value
-    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    __tablename__ = "tb_comment"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    post_id: Mapped[int] = mapped_column(
+        ForeignKey("tb_post.id"), nullable=False, index=True
+    )
+    author_id: Mapped[int] = mapped_column(
+        ForeignKey("tb_user.id"), nullable=False, index=True
+    )
+    content: Mapped[str] = mapped_column(String(1000), nullable=False)
+    img_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    author: Mapped["User"] = relationship(
+        "User", back_populates="comments", foreign_keys=[author_id]
+    )
+    post: Mapped["Post"] = relationship(
+        "Post", back_populates="comments", foreign_keys=[post_id]
+    )
 
     def delete(self) -> None:
         """댓글 논리적 삭제"""
         self.del_yn = DeleteStatus.DELETED.value
 
 
-@dataclass
-class Comments:
-    """댓글 컬렉션"""
-
-    def __init__(self, comments: List[Comment], condition=None):
-        self._comments = comments
-        self.condition = condition
-
-    def __iter__(self):
-        return iter(self._comments)
-
-    def __len__(self):
-        return len(self._comments)
-
-    def __getitem__(self, index):
-        return self._comments[index]
-
-    def __add__(self, other):
-        return Comments(self._comments + other._comments)
-
-    def append(self, comment: Comment, next_id: int) -> None:
-        """댓글 추가
-
-        Args:
-            comment: 추가할 댓글
-            next_id: 할당할 ID
-        """
-        comment.id = next_id
-        self._comments.append(comment)
-
-    def get(self, condition) -> 'Comments':
-        """조건에 맞는 댓글만 필터링"""
-        comments: List[Comment] = [
-            comment for comment in self._comments if condition(comment)
-        ]
-        return Comments(comments, condition=condition)
-
-    def get_condition_not_delete(self, condition) -> 'Comments':
-        """삭제되지 않은 댓글만 필터링"""
-        return self.get(
-            lambda comment: comment.del_yn == DeleteStatus.NOT_DELETED.value
-            and condition(comment)
-        )
-
-    def get_comment(self, comment_id: int) -> Optional[Comment]:
-        """댓글 단건 조회"""
-        comments = self.get_condition_not_delete(lambda comment: comment.id == comment_id)
-        return comments._comments[0] if len(comments) > 0 else None
-
-    def to_list(self) -> List[Comment]:
-        """댓글 리스트 반환"""
-        return self._comments
-
-
 class CommentModel:
     """댓글 데이터 관리"""
 
-    def __init__(self):
-        self._comments: Comments = Comments([])
-        self._next_id: int = 1
+    def __init__(self, db: Session):
+        self.db = db
 
     def create(
         self, post_id: int, author_id: int, content: str, img_url: Optional[str] = None
@@ -108,8 +68,9 @@ class CommentModel:
             post_id=post_id, author_id=author_id, content=content, img_url=img_url
         )
 
-        self._comments.append(comment, self._next_id)
-        self._next_id += 1
+        self.db.add(comment)
+        self.db.commit()
+        self.db.refresh(comment)
         return comment
 
     def find_by_id(self, comment_id: int) -> Optional[Comment]:
@@ -121,7 +82,8 @@ class CommentModel:
         Returns:
             Optional[Comment]: 댓글 (없으면 None)
         """
-        return self._comments.get_comment(comment_id)
+        stmt = select(Comment).where(Comment.active_filter(), Comment.id == comment_id)
+        return self.db.execute(stmt).scalar_one_or_none()
 
     def find_by_post_id(self, post_id: int) -> List[Comment]:
         """게시글의 모든 댓글 조회
@@ -132,10 +94,10 @@ class CommentModel:
         Returns:
             List[Comment]: 댓글 목록
         """
-        comments = self._comments.get_condition_not_delete(
-            lambda comment: comment.post_id == post_id
+        stmt = select(Comment).where(
+            Comment.active_filter(), Comment.post_id == post_id
         )
-        return comments.to_list()
+        return list(self.db.execute(stmt).scalars().all())
 
     def delete(self, comment_id: int) -> bool:
         """댓글 삭제 (논리적 삭제 - del_yn='Y')
@@ -151,6 +113,7 @@ class CommentModel:
             return False
 
         comment.delete()
+        self.db.commit()
         return True
 
     def exists_by_id(self, comment_id: int) -> bool:
@@ -191,4 +154,6 @@ class CommentModel:
 
         comment.content = content
         comment.updated_at = datetime.now().isoformat()
+        self.db.commit()
+        self.db.refresh(comment)
         return comment

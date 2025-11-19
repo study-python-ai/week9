@@ -1,59 +1,38 @@
-from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Optional
 
+from sqlalchemy import ForeignKey, String, select
+from sqlalchemy.orm import Mapped, Session, mapped_column
 
-@dataclass
-class Like:
+from app.models.base import Base
+
+
+class Like(Base):
     """좋아요"""
 
-    post_id: int
-    user_id: int
-    created_at: datetime = field(default_factory=datetime.now)
+    __tablename__ = "tb_like"
 
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    post_id: Mapped[int] = mapped_column(
+        ForeignKey("tb_post.id"), nullable=False, index=True
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("tb_user.id"), nullable=False, index=True
+    )
+    created_at: Mapped[str] = mapped_column(
+        String, default=lambda: datetime.now().isoformat(), nullable=False
+    )
 
-@dataclass
-class Likes:
-    """좋아요 컬렉션"""
-
-    def __init__(self):
-        self._likes: List[Like] = []
-
-    def add(self, post_id: int, user_id: int) -> Like:
-        """좋아요 추가"""
-        like = Like(post_id=post_id, user_id=user_id)
-        self._likes.append(like)
-        return like
-
-    def remove(self, post_id: int, user_id: int) -> bool:
-        """좋아요 제거"""
-        for i, like in enumerate(self._likes):
-            if like.post_id == post_id and like.user_id == user_id:
-                self._likes.pop(i)
-                return True
-        return False
-
-    def exists(self, post_id: int, user_id: int) -> bool:
-        """좋아요 존재 여부 확인"""
-        return any(
-            like.post_id == post_id and like.user_id == user_id
-            for like in self._likes
-        )
-
-    def get_by_post_id(self, post_id: int) -> List[Like]:
-        """게시글의 모든 좋아요 조회"""
-        return [like for like in self._likes if like.post_id == post_id]
-
-    def get_by_user_id(self, user_id: int) -> List[Like]:
-        """사용자의 모든 좋아요 조회"""
-        return [like for like in self._likes if like.user_id == user_id]
+    __table_args__ = (
+        {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
 
 
 class LikeModel:
     """좋아요 모델"""
 
-    def __init__(self):
-        self._likes = Likes()
+    def __init__(self, db: Session):
+        self.db = db
 
     def add_like(self, post_id: int, user_id: int) -> Optional[Like]:
         """좋아요 추가
@@ -65,9 +44,14 @@ class LikeModel:
         Returns:
             Optional[Like]: 추가된 좋아요 (이미 존재하면 None)
         """
-        if self._likes.exists(post_id, user_id):
+        if self.has_liked(post_id, user_id):
             return None
-        return self._likes.add(post_id, user_id)
+
+        like = Like(post_id=post_id, user_id=user_id)
+        self.db.add(like)
+        self.db.commit()
+        self.db.refresh(like)
+        return like
 
     def remove_like(self, post_id: int, user_id: int) -> bool:
         """좋아요 제거
@@ -79,7 +63,15 @@ class LikeModel:
         Returns:
             bool: 제거 성공 여부
         """
-        return self._likes.remove(post_id, user_id)
+        stmt = select(Like).where(Like.post_id == post_id, Like.user_id == user_id)
+        like = self.db.execute(stmt).scalar_one_or_none()
+
+        if not like:
+            return False
+
+        self.db.delete(like)
+        self.db.commit()
+        return True
 
     def has_liked(self, post_id: int, user_id: int) -> bool:
         """좋아요 여부 확인
@@ -91,7 +83,8 @@ class LikeModel:
         Returns:
             bool: 좋아요 여부
         """
-        return self._likes.exists(post_id, user_id)
+        stmt = select(Like).where(Like.post_id == post_id, Like.user_id == user_id)
+        return self.db.execute(stmt).scalar_one_or_none() is not None
 
     def get_likes_by_post(self, post_id: int) -> List[Like]:
         """게시글의 좋아요 목록 조회
@@ -102,4 +95,5 @@ class LikeModel:
         Returns:
             List[Like]: 좋아요 목록
         """
-        return self._likes.get_by_post_id(post_id)
+        stmt = select(Like).where(Like.post_id == post_id)
+        return list(self.db.execute(stmt).scalars().all())

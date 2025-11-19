@@ -6,12 +6,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v2.routers import post_router as v2_post_router
 from app.api.v2.routers import user_router as v2_user_router
-from app.common.exception_handlers import (
+from app.core.exceptions.exception_handlers import (
     general_exception_handler,
     http_exception_handler,
     validation_exception_handler,
 )
-from app.common.exceptions import ForbiddenException
+from app.core.exceptions.exceptions import ForbiddenException
 from app.middleware.logging_middleware import LoggingMiddleware
 
 logging.basicConfig(

@@ -1,21 +1,24 @@
-from fastapi import Depends, Header
+from typing import Optional
 
-from app.common.error_codes import ErrorCode
-from app.common.exceptions import UnauthorizedException
-from app.core.security import verify_token
-from app.dependencies import get_user_model
-from app.models.user_model import User, UserModel
+from fastapi import Depends, Header
+from sqlalchemy.orm import Session
+
+from app.core.db.dependencies import get_db, get_user_model
+from app.core.exceptions.error_codes import ErrorCode
+from app.core.exceptions.exceptions import UnauthorizedException
+from app.core.security.security import verify_token
+from app.models.user_model import User
 
 
 def get_current_user(
     authorization: str = Header(None, description="Bearer 토큰"),
-    user_model: UserModel = Depends(get_user_model),
+    db: Session = Depends(get_db),
 ) -> User:
     """JWT 토큰에서 현재 사용자 추출
 
     Args:
         authorization: Authorization 헤더 (Bearer {token})
-        user_model: 사용자 모델 (의존성 주입)
+        db: 데이터베이스 세션 (의존성 주입)
 
     Returns:
         인증된 User 객체
@@ -25,8 +28,7 @@ def get_current_user(
     """
     if not authorization:
         raise UnauthorizedException(
-            "인증 헤더가 없습니다.",
-            error_code=ErrorCode.UNAUTHORIZED,
+            "인증 헤더가 없습니다.", error_code=ErrorCode.UNAUTHORIZED
         )
 
     if not authorization.startswith("Bearer "):
@@ -50,10 +52,41 @@ def get_current_user(
             error_code=ErrorCode.TOKEN_INVALID,
         )
 
+    user_model = get_user_model(db)
     user = user_model.find_by_id(int(user_id))
     if not user:
         raise UnauthorizedException(
             "사용자를 찾을 수 없습니다.", error_code=ErrorCode.TOKEN_USER_NOT_FOUND
         )
 
+    return user
+
+
+def get_optional_current_user(
+    authorization: str = Header(None, description="Bearer 토큰"),
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    """JWT 토큰에서 현재 사용자 추출 (선택적)
+
+    Args:
+        authorization: Authorization 헤더 (Bearer {token})
+        db: 데이터베이스 세션 (의존성 주입)
+
+    Returns:
+        인증된 User 객체 또는 None (토큰이 없는 경우)
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+
+    token = authorization.replace("Bearer ", "")
+    payload = verify_token(token)
+    if not payload:
+        return None
+
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+
+    user_model = get_user_model(db)
+    user = user_model.find_by_id(int(user_id))
     return user

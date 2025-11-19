@@ -1,11 +1,15 @@
-from app.common.error_codes import ErrorCode
-from app.common.exceptions import ConflictException, ForbiddenException, NotFoundException, BadRequestException
-from app.common.validators import get_or_raise
-from app.models.comment_model import CommentModel
-from app.models.like_model import LikeModel
+from typing import Optional
+
+from app.core.exceptions.error_codes import ErrorCode
+from app.core.exceptions.exceptions import (
+    BadRequestException,
+    ConflictException,
+    ForbiddenException,
+)
+from app.core.validators import get_or_raise
 from app.models.post_model import Post, PostModel
 from app.models.user_model import User, UserModel
-from app.schemas.v2 import (
+from app.schemas import (
     CommentResponse,
     CreateCommentRequest,
     CreatePostRequest,
@@ -18,19 +22,15 @@ from app.schemas.v2 import (
 
 
 class PostController:
-    """v2 게시글 컨트롤러"""
+    """v2 게시글 컨트롤러 (Aggregate 패턴 적용)"""
 
-    def __init__(
-        self, post_model: PostModel, user_model: UserModel, comment_model: CommentModel, like_model: LikeModel
-    ):
+    def __init__(self, post_model: PostModel, user_model: UserModel):
         self.post_model = post_model
         self.user_model = user_model
-        self.comment_model = comment_model
-        self.like_model = like_model
 
     def _convert_to_response(self, post: Post) -> PostResponse:
-        """Post 객체를 PostResponse로 변환"""
-        comments = self.comment_model.find_by_post_id(post.id)
+        """Post 객체를 PostResponse로 변환 (Aggregate 패턴)"""
+        comments = self.post_model.get_comments(post.id)
         comment_responses = [
             CommentResponse(
                 id=comment.id,
@@ -43,6 +43,8 @@ class PostController:
             for comment in comments
         ]
 
+        stats = self.post_model.get_post_stats(post.id)
+
         return PostResponse(
             id=post.id,
             title=post.title,
@@ -50,9 +52,9 @@ class PostController:
             author_id=post.author_id,
             img_url=post.img_url,
             status=PostStatusResponse(
-                view_count=post.status.view_count,
-                like_count=post.status.like_count,
-                comment_count=post.status.comment_count,
+                view_count=stats["view_count"],
+                like_count=stats["like_count"],
+                comment_count=stats["comment_count"],
             ),
             del_yn=post.del_yn,
             created_at=post.created_at,
@@ -85,15 +87,18 @@ class PostController:
         post_responses = [self._convert_to_response(post) for post in posts]
         return PostListResponse(posts=post_responses, total=len(post_responses))
 
-    def get_post(self, post_id: int) -> PostResponse:
-        """게시글 상세 조회"""
+    def get_post(
+        self, post_id: int, current_user: Optional[User] = None
+    ) -> PostResponse:
+        """게시글 상세 조회 (Aggregate 패턴)"""
         post = get_or_raise(
             self.post_model.find_by_id(post_id),
             "게시글을 찾을 수 없습니다.",
             error_code=ErrorCode.POST_NOT_FOUND,
         )
 
-        self.post_model.increase_view_count(post_id)
+        if current_user:
+            self.post_model.add_view(post_id, current_user.id)
 
         return self._convert_to_response(post)
 
@@ -165,65 +170,51 @@ class PostController:
         self.post_model.delete(post_id)
 
     def like_post(self, post_id: int, current_user: User) -> PostResponse:
-        """게시글 좋아요"""
+        """게시글 좋아요 (Aggregate 패턴)"""
         post = get_or_raise(
             self.post_model.find_by_id(post_id),
             "게시글을 찾을 수 없습니다.",
             error_code=ErrorCode.POST_NOT_FOUND,
         )
 
-        # 중복 좋아요 체크
-        if self.like_model.has_liked(post_id, current_user.id):
+        if not self.post_model.add_like(post_id, current_user.id):
             raise ConflictException(
-                "이미 좋아요한 게시글입니다.",
-                error_code=ErrorCode.LIKE_ALREADY_EXISTS,
+                "이미 좋아요한 게시글입니다.", error_code=ErrorCode.LIKE_ALREADY_EXISTS
             )
-
-        # 좋아요 추가
-        self.like_model.add_like(post_id, current_user.id)
-        self.post_model.increase_like_count(post_id)
 
         return self._convert_to_response(post)
 
     def unlike_post(self, post_id: int, current_user: User) -> PostResponse:
-        """게시글 좋아요 취소"""
+        """게시글 좋아요 취소 (Aggregate 패턴)"""
         post = get_or_raise(
             self.post_model.find_by_id(post_id),
             "게시글을 찾을 수 없습니다.",
             error_code=ErrorCode.POST_NOT_FOUND,
         )
 
-        # 좋아요 여부 체크
-        if not self.like_model.has_liked(post_id, current_user.id):
+        if not self.post_model.remove_like(post_id, current_user.id):
             raise BadRequestException(
-                "좋아요하지 않은 게시글입니다.",
-                error_code=ErrorCode.LIKE_NOT_FOUND,
+                "좋아요하지 않은 게시글입니다.", error_code=ErrorCode.LIKE_NOT_FOUND
             )
-
-        # 좋아요 취소
-        self.like_model.remove_like(post_id, current_user.id)
-        self.post_model.decrease_like_count(post_id)
 
         return self._convert_to_response(post)
 
     def add_comment(
         self, post_id: int, request: CreateCommentRequest, current_user: User
     ) -> PostResponse:
-        """댓글 생성"""
+        """댓글 생성 (Aggregate 패턴)"""
         post = get_or_raise(
             self.post_model.find_by_id(post_id),
             "게시글을 찾을 수 없습니다.",
             error_code=ErrorCode.POST_NOT_FOUND,
         )
 
-        self.comment_model.create(
+        self.post_model.add_comment(
             post_id=post_id,
             author_id=current_user.id,
             content=request.content,
             img_url=request.img_url,
         )
-
-        self.post_model.increase_comment_count(post_id)
 
         return self._convert_to_response(post)
 
@@ -234,7 +225,7 @@ class PostController:
         request: UpdateCommentRequest,
         current_user: User,
     ) -> PostResponse:
-        """댓글 수정 (권한 확인)
+        """댓글 수정 (Aggregate 패턴, 권한 확인 포함)
 
         Raises:
             ForbiddenException: 작성자가 아닌 경우
@@ -245,32 +236,25 @@ class PostController:
             error_code=ErrorCode.POST_NOT_FOUND,
         )
 
-        comment = get_or_raise(
-            self.comment_model.find_by_id(comment_id),
-            "댓글을 찾을 수 없습니다.",
-            error_code=ErrorCode.COMMENT_NOT_FOUND,
+        updated_comment = self.post_model.update_comment(
+            post_id=id,
+            comment_id=comment_id,
+            content=request.content,
+            author_id=current_user.id,
         )
 
-        if comment.post_id != id:
-            raise NotFoundException(
-                "해당 게시글의 댓글이 아닙니다.",
-                error_code=ErrorCode.COMMENT_POST_MISMATCH,
-            )
-
-        if comment.author_id != current_user.id:
+        if not updated_comment:
             raise ForbiddenException(
                 "댓글을 수정할 권한이 없습니다.",
                 error_code=ErrorCode.COMMENT_PERMISSION_DENIED,
             )
-
-        self.comment_model.update(comment_id, request.content)
 
         return self._convert_to_response(post)
 
     def remove_comment(
         self, id: int, comment_id: int, current_user: User
     ) -> PostResponse:
-        """댓글 삭제 (권한 확인)
+        """댓글 삭제 (Aggregate 패턴, 권한 확인 포함)
 
         Raises:
             ForbiddenException: 작성자가 아닌 경우
@@ -281,26 +265,12 @@ class PostController:
             error_code=ErrorCode.POST_NOT_FOUND,
         )
 
-        comment = get_or_raise(
-            self.comment_model.find_by_id(comment_id),
-            "댓글을 찾을 수 없습니다.",
-            error_code=ErrorCode.COMMENT_NOT_FOUND,
-        )
-
-        if comment.post_id != id:
-            raise NotFoundException(
-                "해당 게시글의 댓글이 아닙니다.",
-                error_code=ErrorCode.COMMENT_POST_MISMATCH,
-            )
-
-        if comment.author_id != current_user.id:
+        if not self.post_model.delete_comment(
+            post_id=id, comment_id=comment_id, author_id=current_user.id
+        ):
             raise ForbiddenException(
                 "댓글을 삭제할 권한이 없습니다.",
                 error_code=ErrorCode.COMMENT_PERMISSION_DENIED,
             )
-
-        self.comment_model.delete(comment_id)
-
-        self.post_model.decrease_comment_count(id)
 
         return self._convert_to_response(post)

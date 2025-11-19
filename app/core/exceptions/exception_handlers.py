@@ -5,8 +5,8 @@ from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.common.error_codes import ErrorCode
-from app.common.exceptions import BaseCustomException
+from app.core.exceptions.error_codes import ErrorCode
+from app.core.exceptions.exceptions import BaseCustomException
 
 logger = logging.getLogger(__name__)
 

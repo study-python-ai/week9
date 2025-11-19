@@ -1,6 +1,6 @@
 from typing import Optional, TypeVar
 
-from app.common.exceptions import (
+from app.core.exceptions.exceptions import (
     DuplicateException,
     NotFoundException,
     UnauthorizedException,
