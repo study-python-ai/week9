@@ -11,9 +11,11 @@ from app.models.post_model import Post, PostModel
 from app.models.user_model import User, UserModel
 from app.schemas import (
     CommentAuthor,
+    CommentCursorInfo,
     CommentResponse,
     CreateCommentRequest,
     CreatePostRequest,
+    PostCursorResponse,
     PostListResponse,
     PostResponse,
     PostStatusResponse,
@@ -29,9 +31,27 @@ class PostController:
         self.post_model = post_model
         self.user_model = user_model
 
-    def _convert_to_response(self, post: Post) -> PostResponse:
-        """Post 객체를 PostResponse로 변환 (Aggregate 패턴)"""
-        comments = self.post_model.get_comments(post.id)
+    def _convert_to_response(self, post: Post, comment_limit: int = 5) -> PostResponse:
+        """Post 객체를 PostResponse로 변환 (Aggregate 패턴)
+
+        Args:
+            post: Post 객체
+            comment_limit: 댓글 조회 개수 (기본 5개)
+        """
+        from app.models.comment_model import CommentModel
+
+        comment_model = CommentModel(self.post_model.db)
+
+        comments = comment_model.find_by_post_id(
+            post_id=post.id,
+            cursor_id=None,
+            limit=comment_limit + 1
+        )
+
+        has_next = len(comments) > comment_limit
+        if has_next:
+            comments = comments[:comment_limit]
+
         comment_responses = [
             CommentResponse(
                 id=comment.id,
@@ -46,6 +66,16 @@ class PostController:
             )
             for comment in comments
         ]
+
+        total_comments = comment_model.count_by_post_id(post.id)
+        next_cursor = comments[-1].id if has_next and comments else None
+
+        comment_cursor_info = CommentCursorInfo(
+            comments=comment_responses,
+            next_cursor=next_cursor,
+            has_next=has_next,
+            total=total_comments
+        )
 
         stats = self.post_model.get_post_stats(post.id)
 
@@ -62,7 +92,7 @@ class PostController:
             ),
             del_yn=post.del_yn,
             created_at=post.created_at,
-            comments=comment_responses,
+            comments=comment_cursor_info,
         )
 
     def create_post(
@@ -90,11 +120,38 @@ class PostController:
 
         return self._convert_to_response(post)
 
-    def get_posts(self) -> PostListResponse:
-        """게시글 목록 조회"""
-        posts = self.post_model.find_posts()
+    def get_posts(
+        self, cursor_id: Optional[int] = None, limit: int = 10
+    ) -> PostListResponse | PostCursorResponse:
+        """게시글 목록 조회 (커서 페이지네이션 지원)
+
+        Args:
+            cursor_id: 커서 ID (이전 페이지 마지막 게시글 ID)
+            limit: 조회할 게시글 수
+
+        Returns:
+            PostListResponse: cursor_id가 None인 경우 (하위 호환)
+            PostCursorResponse: cursor_id가 있는 경우 (커서 페이지네이션)
+        """
+        if cursor_id is None:
+            posts = self.post_model.find_posts()
+            post_responses = [self._convert_to_response(post) for post in posts]
+            return PostListResponse(posts=post_responses, total=len(post_responses))
+
+        posts = self.post_model.find_posts(cursor_id=cursor_id, limit=limit + 1)
+
+        has_next = len(posts) > limit
+        if has_next:
+            posts = posts[:limit]
+
         post_responses = [self._convert_to_response(post) for post in posts]
-        return PostListResponse(posts=post_responses, total=len(post_responses))
+        next_cursor = posts[-1].id if has_next and posts else None
+
+        return PostCursorResponse(
+            posts=post_responses,
+            next_cursor=next_cursor,
+            has_next=has_next
+        )
 
     def get_post(
         self, post_id: int, current_user: Optional[User] = None

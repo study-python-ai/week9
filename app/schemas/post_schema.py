@@ -148,6 +148,37 @@ class CommentResponse(BaseModel):
         }
 
 
+class CommentCursorInfo(BaseModel):
+    """댓글 커서 페이지네이션 정보 DTO"""
+
+    comments: List[CommentResponse]
+    next_cursor: Optional[int] = None
+    has_next: bool = False
+    total: int = 0
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "comments": [
+                    {
+                        "id": 10,
+                        "post_id": 1,
+                        "author": {
+                            "id": 2,
+                            "nick_name": "홍길동",
+                            "image_url": "https://example.com/profile.jpg",
+                        },
+                        "content": "댓글 내용",
+                        "created_at": "2025-11-13 21:00:00",
+                    }
+                ],
+                "next_cursor": 9,
+                "has_next": True,
+                "total": 15,
+            }
+        }
+
+
 class PostResponse(BaseModel):
     """게시글 응답 DTO (상세 조회용)"""
 
@@ -159,7 +190,7 @@ class PostResponse(BaseModel):
     status: PostStatusResponse
     del_yn: str
     created_at: str
-    comments: List[CommentResponse] = []
+    comments: CommentCursorInfo = CommentCursorInfo(comments=[], next_cursor=None, has_next=False, total=0)
 
     class Config:
         from_attributes = True
@@ -173,15 +204,24 @@ class PostResponse(BaseModel):
                 "status": {"view_count": 42, "like_count": 10, "comment_count": 5},
                 "del_yn": "N",
                 "created_at": "2025-01-13 10:30:00",
-                "comments": [
-                    {
-                        "id": 1,
-                        "post_id": 1,
-                        "author_id": 2,
-                        "img_url": "https://example.com/profile.jpg",
-                        "content": "첫 번째 댓글입니다.",
-                    }
-                ],
+                "comments": {
+                    "comments": [
+                        {
+                            "id": 1,
+                            "post_id": 1,
+                            "author": {
+                                "id": 2,
+                                "nick_name": "홍길동",
+                                "image_url": "https://example.com/profile.jpg",
+                            },
+                            "content": "첫 번째 댓글입니다.",
+                            "created_at": "2025-11-13 21:00:00",
+                        }
+                    ],
+                    "next_cursor": None,
+                    "has_next": False,
+                    "total": 1,
+                },
             }
         }
 
@@ -213,5 +253,38 @@ class PostListResponse(BaseModel):
                     }
                 ],
                 "total": 1,
+            }
+        }
+
+
+class PostCursorResponse(BaseModel):
+    """게시글 목록 커서 페이지네이션 응답 DTO"""
+
+    posts: List[PostResponse]
+    next_cursor: Optional[int] = None
+    has_next: bool = False
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "posts": [
+                    {
+                        "id": 10,
+                        "title": "게시글 제목",
+                        "content": "게시글 내용...",
+                        "author_id": 1,
+                        "img_url": None,
+                        "status": {
+                            "view_count": 10,
+                            "like_count": 2,
+                            "comment_count": 5,
+                        },
+                        "del_yn": "N",
+                        "created_at": "2025-11-13 10:30:00",
+                        "comments": [],
+                    }
+                ],
+                "next_cursor": 9,
+                "has_next": True,
             }
         }

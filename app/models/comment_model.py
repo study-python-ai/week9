@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional, TYPE_CHECKING
-from sqlalchemy import String, ForeignKey, select
+from sqlalchemy import String, ForeignKey, select, func
 from sqlalchemy.orm import Mapped, mapped_column, Session, relationship
 from app.models.base import Base, TimestampMixin, SoftDeleteMixin
 
@@ -88,18 +88,28 @@ class CommentModel:
         stmt = select(Comment).where(Comment.active_filter(), Comment.id == comment_id)
         return self.db.execute(stmt).scalar_one_or_none()
 
-    def find_by_post_id(self, post_id: int) -> List[Comment]:
-        """게시글의 모든 댓글 조회
+    def find_by_post_id(
+        self, post_id: int, cursor_id: Optional[int] = None, limit: int = 10
+    ) -> List[Comment]:
+        """게시글의 댓글 조회 (커서 페이지네이션 지원)
 
         Args:
             post_id: 게시글 ID
+            cursor_id: 커서 ID (이전 페이지 마지막 댓글 ID)
+            limit: 조회할 댓글 수
 
         Returns:
-            List[Comment]: 댓글 목록
+            List[Comment]: 댓글 목록 (ID 내림차순)
         """
         stmt = select(Comment).where(
             Comment.active_filter(), Comment.post_id == post_id
         )
+
+        if cursor_id is not None:
+            stmt = stmt.where(Comment.id < cursor_id)
+
+        stmt = stmt.order_by(Comment.id.desc()).limit(limit)
+
         return list(self.db.execute(stmt).scalars().all())
 
     def delete(self, comment_id: int) -> bool:
@@ -139,7 +149,10 @@ class CommentModel:
         Returns:
             int: 댓글 수
         """
-        return len(self.find_by_post_id(post_id))
+        stmt = select(func.count(Comment.id)).where(
+            Comment.active_filter(), Comment.post_id == post_id
+        )
+        return self.db.execute(stmt).scalar() or 0
 
     def update(self, comment_id: int, content: str) -> Optional[Comment]:
         """댓글 내용 수정

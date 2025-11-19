@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Optional, Union
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.v2.controllers.post_controller import PostController
@@ -10,6 +10,7 @@ from app.models.user_model import User
 from app.schemas import (
     CreateCommentRequest,
     CreatePostRequest,
+    PostCursorResponse,
     PostListResponse,
     PostResponse,
     UpdateCommentRequest,
@@ -34,20 +35,28 @@ def get_post_controller(db: Session = Depends(get_db)) -> PostController:
     return PostController(get_post_model(db), get_user_model(db))
 
 
-@router.get("", response_model=PostListResponse)
-def get_posts(controller: PostController = Depends(get_post_controller)):
+@router.get("", response_model=Union[PostListResponse, PostCursorResponse])
+def get_posts(
+    cursor: Optional[int] = Query(None, description="커서 ID"),
+    limit: int = Query(10, ge=1, le=100, description="조회할 게시글 수 (1-100)"),
+    controller: PostController = Depends(get_post_controller),
+):
     """
     게시글 목록 조회
 
-    모든 게시글 목록을 조회
+    cursor 파라미터가 없으면 기존 방식(PostListResponse)으로 응답
+    cursor 파라미터가 있으면 커서 페이지네이션(PostCursorResponse)으로 응답
 
     Args:
+        cursor: 커서 ID
+        limit: 조회할 게시글 수
         controller: 게시글 컨트롤러
 
     Returns:
-        PostListResponse: 게시글 목록 응답
+        PostListResponse: cursor가 없는 경우
+        PostCursorResponse: cursor가 있는 경우
     """
-    return controller.get_posts()
+    return controller.get_posts(cursor_id=cursor, limit=limit)
 
 
 @router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
