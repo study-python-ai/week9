@@ -38,6 +38,12 @@ class DuplicateException(BaseCustomException):
     status_code = status.HTTP_409_CONFLICT
 
 
+class ConflictException(BaseCustomException):
+    """409 Conflict"""
+
+    status_code = status.HTTP_409_CONFLICT
+
+
 class BadRequestException(BaseCustomException):
     """400 Bad Request"""
 

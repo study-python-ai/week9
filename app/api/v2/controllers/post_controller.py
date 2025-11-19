@@ -1,7 +1,8 @@
 from app.common.error_codes import ErrorCode
-from app.common.exceptions import ForbiddenException, NotFoundException
+from app.common.exceptions import ConflictException, ForbiddenException, NotFoundException, BadRequestException
 from app.common.validators import get_or_raise
 from app.models.comment_model import CommentModel
+from app.models.like_model import LikeModel
 from app.models.post_model import Post, PostModel
 from app.models.user_model import User, UserModel
 from app.schemas.v2 import (
@@ -20,11 +21,12 @@ class PostController:
     """v2 게시글 컨트롤러"""
 
     def __init__(
-        self, post_model: PostModel, user_model: UserModel, comment_model: CommentModel
+        self, post_model: PostModel, user_model: UserModel, comment_model: CommentModel, like_model: LikeModel
     ):
         self.post_model = post_model
         self.user_model = user_model
         self.comment_model = comment_model
+        self.like_model = like_model
 
     def _convert_to_response(self, post: Post) -> PostResponse:
         """Post 객체를 PostResponse로 변환"""
@@ -170,6 +172,15 @@ class PostController:
             error_code=ErrorCode.POST_NOT_FOUND,
         )
 
+        # 중복 좋아요 체크
+        if self.like_model.has_liked(post_id, current_user.id):
+            raise ConflictException(
+                "이미 좋아요한 게시글입니다.",
+                error_code=ErrorCode.LIKE_ALREADY_EXISTS,
+            )
+
+        # 좋아요 추가
+        self.like_model.add_like(post_id, current_user.id)
         self.post_model.increase_like_count(post_id)
 
         return self._convert_to_response(post)
@@ -182,6 +193,15 @@ class PostController:
             error_code=ErrorCode.POST_NOT_FOUND,
         )
 
+        # 좋아요 여부 체크
+        if not self.like_model.has_liked(post_id, current_user.id):
+            raise BadRequestException(
+                "좋아요하지 않은 게시글입니다.",
+                error_code=ErrorCode.LIKE_NOT_FOUND,
+            )
+
+        # 좋아요 취소
+        self.like_model.remove_like(post_id, current_user.id)
         self.post_model.decrease_like_count(post_id)
 
         return self._convert_to_response(post)
@@ -262,7 +282,7 @@ class PostController:
         )
 
         comment = get_or_raise(
-            self.comment_model.find_by_id(id),
+            self.comment_model.find_by_id(comment_id),
             "댓글을 찾을 수 없습니다.",
             error_code=ErrorCode.COMMENT_NOT_FOUND,
         )
@@ -279,8 +299,8 @@ class PostController:
                 error_code=ErrorCode.COMMENT_PERMISSION_DENIED,
             )
 
-        self.comment_model.delete(id)
+        self.comment_model.delete(comment_id)
 
-        self.post_model.decrease_comment_count(comment_id)
+        self.post_model.decrease_comment_count(id)
 
         return self._convert_to_response(post)

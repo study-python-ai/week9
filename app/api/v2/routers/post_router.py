@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, status
 
 from app.api.v2.controllers.post_controller import PostController
 from app.common.dependencies import get_current_user
-from app.dependencies import get_comment_model, get_post_model, get_user_model
+from app.dependencies import get_comment_model, get_like_model, get_post_model, get_user_model
 from app.models.comment_model import CommentModel
+from app.models.like_model import LikeModel
 from app.models.post_model import PostModel
 from app.models.user_model import User, UserModel
 from app.schemas.v2 import (
@@ -22,8 +23,9 @@ def get_post_controller(
     post_model: PostModel = Depends(get_post_model),
     user_model: UserModel = Depends(get_user_model),
     comment_model: CommentModel = Depends(get_comment_model),
+    like_model: LikeModel = Depends(get_like_model),
 ) -> PostController:
-    return PostController(post_model, user_model, comment_model)
+    return PostController(post_model, user_model, comment_model, like_model)
 
 
 @router.get("", response_model=PostListResponse)
