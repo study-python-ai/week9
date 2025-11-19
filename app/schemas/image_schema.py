@@ -1,5 +1,6 @@
-from typing import List, Optional
-from pydantic import BaseModel, Field
+from typing import List
+
+from pydantic import BaseModel
 
 
 class ImageResponse(BaseModel):
@@ -42,10 +43,7 @@ class UploadImageResponse(BaseModel):
 
     class Config:
         json_schema_extra = {
-            "example": {
-                "image_id": 1,
-                "url": "https://example.com/uploads/image.jpg",
-            }
+            "example": {"image_id": 1, "url": "https://example.com/uploads/image.jpg"}
         }
 
 
