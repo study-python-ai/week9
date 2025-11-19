@@ -4,8 +4,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.v1.routers import post_router as v1_post_router
-from app.api.v1.routers import user_router as v1_user_router
 from app.api.v2.routers import post_router as v2_post_router
 from app.api.v2.routers import user_router as v2_user_router
 from app.common.exception_handlers import (
@@ -23,7 +21,10 @@ logging.basicConfig(
 )
 
 app = FastAPI(
-    title="Kakao TASK API", description="Kakao TASK API API v1/v2", version="2.0.0"
+    title="Kakao TASK API",
+    description="Kakao TASK API API v2",
+    version="2.0.0",
+    redirect_slashes=False,
 )
 
 app.add_middleware(LoggingMiddleware)
@@ -33,9 +34,6 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(ForbiddenException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
-
-app.include_router(v1_user_router.router)
-app.include_router(v1_post_router.router)
 
 app.include_router(v2_user_router.router)
 app.include_router(v2_post_router.router)
@@ -50,7 +48,8 @@ async def root():
     """
     return {
         "message": "Kakao TASK API API",
-        "versions": {"v1": "/api/v1", "v2": "/v2"},
+        "version": "v2",
+        "base_url": "/api/v2",
         "docs": "/docs",
     }
 

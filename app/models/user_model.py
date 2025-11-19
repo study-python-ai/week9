@@ -15,12 +15,12 @@ class DeleteStatus(str, Enum):
 class User:
     """사용자 모델"""
 
-    id: int = field(init=False)
-    email: str
-    password: str
-    nick_name: str
+    id: int = 0
+    email: str = ""
+    password: str = ""
+    nick_name: str = ""
     image_url: Optional[str] = None
-    del_yn: str = DeleteStatus.NOT_DELETED.value
+    del_yn: str = field(default=DeleteStatus.NOT_DELETED.value)
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
@@ -64,6 +64,8 @@ class User:
 class Users:
     """사용자 DB 모델"""
 
+    __tablename__ = 'tb_user'
+
     def __init__(self, users: List[User], condition=None):
         self._users = users
         self.condition = condition
@@ -98,7 +100,8 @@ class Users:
     def get_condition_not_delete(self, condition) -> 'Users':
         """비활성화되지 않은 사용자만 필터링"""
         return self.get(
-            lambda user: user.del_yn == DeleteStatus.NOT_DELETED.value and condition(user)
+            lambda user: user.del_yn == DeleteStatus.NOT_DELETED.value
+            and condition(user)
         )
 
     def get_user(self, user_id: int) -> Optional[User]:

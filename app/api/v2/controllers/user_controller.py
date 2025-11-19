@@ -173,17 +173,17 @@ class UserController:
             UnauthorizedException: 현재 비밀번호가 일치하지 않는 경우
             BadRequestException: 새 비밀번호가 현재 비밀번호와 동일한 경우
         """
-        if current_user.id != user_id:
-            raise ForbiddenException(
-                "본인의 비밀번호만 변경할 수 있습니다.",
-                error_code=ErrorCode.USER_PERMISSION_DENIED,
-            )
-
         user = get_or_raise(
             self.user_model.find_by_id(user_id),
             "사용자를 찾을 수 없습니다.",
             error_code=ErrorCode.USER_NOT_FOUND,
         )
+
+        if current_user.id != user_id:
+            raise ForbiddenException(
+                "본인의 비밀번호만 변경할 수 있습니다.",
+                error_code=ErrorCode.USER_PERMISSION_DENIED,
+            )
 
         if not verify_password(request.current_password, user.password):
             raise UnauthorizedException(
@@ -213,16 +213,17 @@ class UserController:
             NotFoundException: 사용자를 찾을 수 없는 경우
             ForbiddenException: 권한이 없는 경우
         """
-        if current_user.id != user_id:
-            raise ForbiddenException(
-                "사용자를 삭제할 권한이 없습니다.",
-                error_code=ErrorCode.USER_PERMISSION_DENIED,
-            )
-
         user = get_or_raise(
             self.user_model.find_by_id(user_id),
             "사용자를 찾을 수 없습니다.",
             error_code=ErrorCode.USER_NOT_FOUND,
         )
 
+        if current_user.id != user_id:
+            raise ForbiddenException(
+                "사용자를 삭제할 권한이 없습니다.",
+                error_code=ErrorCode.USER_PERMISSION_DENIED,
+            )
+
         self.user_model.delete(user.id)
+        return None

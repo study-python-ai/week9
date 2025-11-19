@@ -8,7 +8,7 @@ from app.models.user_model import User, UserModel
 
 
 def get_current_user(
-    authorization: str = Header(..., description="Bearer 토큰"),
+    authorization: str = Header(None, description="Bearer 토큰"),
     user_model: UserModel = Depends(get_user_model),
 ) -> User:
     """JWT 토큰에서 현재 사용자 추출
@@ -23,6 +23,12 @@ def get_current_user(
     Raises:
         UnauthorizedException: 토큰이 없거나 유효하지 않은 경우
     """
+    if not authorization:
+        raise UnauthorizedException(
+            "인증 헤더가 없습니다.",
+            error_code=ErrorCode.UNAUTHORIZED,
+        )
+
     if not authorization.startswith("Bearer "):
         raise UnauthorizedException(
             "유효하지 않은 인증 헤더 형식입니다.",
