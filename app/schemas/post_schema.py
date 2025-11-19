@@ -156,6 +156,36 @@ class CommentCursorInfo(BaseModel):
     has_next: bool = False
     total: int = 0
 
+    @classmethod
+    def from_comments(
+        cls,
+        comments: List[CommentResponse],
+        limit: int,
+        total: int
+    ) -> "CommentCursorInfo":
+        """댓글 커서 페이지네이션 정보 생성 팩토리 메서드
+
+        Args:
+            comments: 댓글 목록 (limit + 1 개수로 조회된 목록)
+            limit: 실제 반환할 댓글 수
+            total: 전체 댓글 수
+
+        Returns:
+            CommentCursorInfo: 댓글 커서 페이지네이션 정보
+        """
+        has_next = len(comments) > limit
+        if has_next:
+            comments = comments[:limit]
+
+        next_cursor = comments[-1].id if has_next and comments else None
+
+        return cls(
+            comments=comments,
+            next_cursor=next_cursor,
+            has_next=has_next,
+            total=total
+        )
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -263,6 +293,33 @@ class PostCursorResponse(BaseModel):
     posts: List[PostResponse]
     next_cursor: Optional[int] = None
     has_next: bool = False
+
+    @classmethod
+    def from_posts(
+        cls,
+        posts: List[PostResponse],
+        limit: int
+    ) -> "PostCursorResponse":
+        """커서 페이지네이션 응답 생성 팩토리 메서드
+
+        Args:
+            posts: 게시글 목록 (limit + 1 개수로 조회된 목록)
+            limit: 실제 반환할 게시글 수
+
+        Returns:
+            PostCursorResponse: 커서 페이지네이션 응답
+        """
+        has_next = len(posts) > limit
+        if has_next:
+            posts = posts[:limit]
+
+        next_cursor = posts[-1].id if has_next and posts else None
+
+        return cls(
+            posts=posts,
+            next_cursor=next_cursor,
+            has_next=has_next
+        )
 
     class Config:
         json_schema_extra = {

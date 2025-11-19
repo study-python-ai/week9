@@ -48,10 +48,6 @@ class PostController:
             limit=comment_limit + 1
         )
 
-        has_next = len(comments) > comment_limit
-        if has_next:
-            comments = comments[:comment_limit]
-
         comment_responses = [
             CommentResponse(
                 id=comment.id,
@@ -68,13 +64,8 @@ class PostController:
         ]
 
         total_comments = comment_model.count_by_post_id(post.id)
-        next_cursor = comments[-1].id if has_next and comments else None
-
-        comment_cursor_info = CommentCursorInfo(
-            comments=comment_responses,
-            next_cursor=next_cursor,
-            has_next=has_next,
-            total=total_comments
+        comment_cursor_info = CommentCursorInfo.from_comments(
+            comment_responses, comment_limit, total_comments
         )
 
         stats = self.post_model.get_post_stats(post.id)
@@ -139,19 +130,9 @@ class PostController:
             return PostListResponse(posts=post_responses, total=len(post_responses))
 
         posts = self.post_model.find_posts(cursor_id=cursor_id, limit=limit + 1)
-
-        has_next = len(posts) > limit
-        if has_next:
-            posts = posts[:limit]
-
         post_responses = [self._convert_to_response(post) for post in posts]
-        next_cursor = posts[-1].id if has_next and posts else None
 
-        return PostCursorResponse(
-            posts=post_responses,
-            next_cursor=next_cursor,
-            has_next=has_next
-        )
+        return PostCursorResponse.from_posts(post_responses, limit)
 
     def get_post(
         self, post_id: int, current_user: Optional[User] = None
