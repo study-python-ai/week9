@@ -7,8 +7,8 @@ def validate_title(value: str) -> str:
     """제목 검증"""
     if not value:
         raise ValueError("제목은 필수 입력 항목입니다.")
-    if len(value) < 1 or len(value) > 100:
-        raise ValueError("제목은 1자 이상 100자 이하이어야 합니다.")
+    if len(value) < 1 or len(value) > 26:
+        raise ValueError("제목은 1자 이상 26자 이하이어야 합니다.")
     return value
 
 

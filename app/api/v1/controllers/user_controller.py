@@ -1,13 +1,13 @@
+from app.common.exceptions import BadRequestException, UnauthorizedException
+from app.common.validators import ensure_unique, get_or_raise
+from app.models.user_model import UserModel
 from app.schemas.common import (
-    RegisterUserRequest,
-    LoginUserRequest,
-    UpdateUserRequest,
     ChangePasswordRequest,
+    LoginUserRequest,
+    RegisterUserRequest,
+    UpdateUserRequest,
     UserResponse,
 )
-from app.models.user_model import UserModel
-from app.common.exceptions import UnauthorizedException, BadRequestException
-from app.common.validators import get_or_raise, ensure_unique
 
 
 class UserController:
@@ -86,7 +86,9 @@ class UserController:
         Raises:
             NotFoundException: 사용자를 찾을 수 없는 경우
         """
-        user = get_or_raise(self.user_model.find_by_id(user_id), "사용자를 찾을 수 없습니다.")
+        user = get_or_raise(
+            self.user_model.find_by_id(user_id), "사용자를 찾을 수 없습니다."
+        )
 
         return UserResponse.model_validate(user)
 
@@ -116,9 +118,7 @@ class UserController:
 
         return UserResponse.model_validate(user)
 
-    def change_password(
-        self, user_id: int, request: ChangePasswordRequest
-    ) -> dict:
+    def change_password(self, user_id: int, request: ChangePasswordRequest) -> dict:
         """비밀번호 변경
 
         Args:
