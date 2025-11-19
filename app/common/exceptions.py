@@ -1,11 +1,17 @@
+from typing import Optional
+
 from fastapi import HTTPException, status
 
 
 class BaseCustomException(HTTPException):
-    """기본 커스텀 예외"""
+    """기본 커스텀 예외
 
-    def __init__(self, detail: str):
+    에러 코드를 포함한 커스텀 예외 클래스
+    """
+
+    def __init__(self, detail: str, error_code: Optional[str] = None):
         super().__init__(status_code=self.status_code, detail=detail)
+        self.error_code = error_code
 
 
 class NotFoundException(BaseCustomException):
@@ -18,6 +24,12 @@ class UnauthorizedException(BaseCustomException):
     """401 Unauthorized"""
 
     status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class ForbiddenException(BaseCustomException):
+    """403 Forbidden"""
+
+    status_code = status.HTTP_403_FORBIDDEN
 
 
 class DuplicateException(BaseCustomException):

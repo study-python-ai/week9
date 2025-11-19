@@ -3,7 +3,7 @@ from app.common.validators import get_or_raise, verify_ownership
 from app.models.comment_model import CommentModel
 from app.models.post_model import Post, PostModel
 from app.models.user_model import UserModel
-from app.schemas.post_schema import (
+from app.schemas.v1 import (
     CommentResponse,
     CreateCommentRequest,
     CreatePostRequest,
@@ -54,9 +54,9 @@ class PostController:
             author_id=post.author_id,
             img_url=post.img_url,
             status=PostStatusResponse(
-                view_count=post.view_count,
-                like_count=post.like_count,
-                comment_count=post.comment_count,
+                view_count=post.status.view_count,
+                like_count=post.status.like_count,
+                comment_count=post.status.comment_count,
             ),
             del_yn=post.del_yn,
             created_at=post.created_at,
@@ -148,7 +148,7 @@ class PostController:
         )
 
         updated_post = self.post_model.update(
-            post_id=post_id,
+            id=post_id,
             title=request.title,
             content=request.content,
             img_url=request.img_url,

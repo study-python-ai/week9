@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, status
 from app.api.v1.controllers.user_controller import UserController
 from app.models.user_model import UserModel
 from app.dependencies import get_user_model
-from app.schemas.user_schema import (
+from app.schemas.common import (
     RegisterUserRequest,
     LoginUserRequest,
     UpdateUserRequest,
+    ChangePasswordRequest,
     UserResponse,
 )
 
@@ -138,6 +139,34 @@ async def update_user_profile(
         NotFoundException: 사용자를 찾을 수 없는 경우
     """
     return controller.update_profile(user_id, request)
+
+
+@router.patch("/{user_id}/password", status_code=status.HTTP_200_OK)
+async def change_user_password(
+    user_id: int,
+    request: ChangePasswordRequest,
+    controller: UserController = Depends(get_user_controller),
+):
+    """비밀번호 변경
+
+    Args:
+
+        user_id: 사용자 ID
+        request: 비밀번호 변경 요청 정보
+            - current_password: 현재 비밀번호
+            - new_password: 새 비밀번호 (6-20자)
+
+    Returns:
+
+        dict: 성공 메시지
+
+    Raises:
+
+        NotFoundException: 사용자를 찾을 수 없는 경우
+        UnauthorizedException: 현재 비밀번호가 일치하지 않는 경우
+        BadRequestException: 새 비밀번호가 현재 비밀번호와 동일한 경우
+    """
+    return controller.change_password(user_id, request)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_200_OK)

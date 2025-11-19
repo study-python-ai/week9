@@ -1,6 +1,7 @@
-from typing import Annotated, Optional
-from pydantic import BaseModel, AfterValidator, Field
 from re import match
+from typing import Annotated, Optional
+
+from pydantic import AfterValidator, BaseModel, Field
 
 
 def validate_email(value: str) -> str:
@@ -61,7 +62,9 @@ class LoginUserRequest(BaseModel):
     password: str = Field(..., description="비밀번호")
 
     class Config:
-        json_schema_extra = {"example": {"email": "user@example.com", "password": "password123"}}
+        json_schema_extra = {
+            "example": {"email": "user@example.com", "password": "password123"}
+        }
 
 
 class UpdateUserRequest(BaseModel):
@@ -69,13 +72,27 @@ class UpdateUserRequest(BaseModel):
 
     nick_name: Optional[NickNameStr] = Field(None, description="닉네임 (2-20자)")
     image_url: Optional[str] = Field(None, description="프로필 이미지 URL")
-    # TODO : 비밀번호 수정 추가
 
     class Config:
         json_schema_extra = {
             "example": {
-                "nick_name": "새로운닉네임",  # 닉네임
-                "image_url": "https://example.com/new-profile.jpg",  # 프로필 이미지 URL
+                "nick_name": "새로운닉네임",
+                "image_url": "https://example.com/new-profile.jpg",
+            }
+        }
+
+
+class ChangePasswordRequest(BaseModel):
+    """비밀번호 변경 요청 DTO"""
+
+    current_password: str = Field(..., description="현재 비밀번호")
+    new_password: PasswordStr = Field(..., description="새 비밀번호 (6-20자)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "current_password": "oldpassword123",
+                "new_password": "newpassword123",
             }
         }
 
@@ -87,8 +104,9 @@ class UserResponse(BaseModel):
     email: str
     nick_name: str
     image_url: Optional[str] = None
-    is_active: bool
+    del_yn: str
     created_at: str
+    updated_at: str
 
     class Config:
         from_attributes = True
@@ -98,7 +116,8 @@ class UserResponse(BaseModel):
                 "email": "user@example.com",
                 "nick_name": "홍길동",
                 "image_url": "https://example.com/profile.jpg",
-                "is_active": True,
-                "created_at": "2025-01-13T10:30:00",
+                "del_yn": "N",
+                "created_at": "2025-01-13 10:30:00",
+                "updated_at": "2025-01-13 10:30:00",
             }
         }

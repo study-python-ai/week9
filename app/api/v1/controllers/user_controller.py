@@ -1,11 +1,12 @@
-from app.schemas.user_schema import (
+from app.schemas.common import (
     RegisterUserRequest,
     LoginUserRequest,
     UpdateUserRequest,
+    ChangePasswordRequest,
     UserResponse,
 )
 from app.models.user_model import UserModel
-from app.common.exceptions import UnauthorizedException
+from app.common.exceptions import UnauthorizedException, BadRequestException
 from app.common.validators import get_or_raise, ensure_unique
 
 
@@ -114,6 +115,39 @@ class UserController:
         )
 
         return UserResponse.model_validate(user)
+
+    def change_password(
+        self, user_id: int, request: ChangePasswordRequest
+    ) -> dict:
+        """비밀번호 변경
+
+        Args:
+            user_id: 사용자 ID
+            request: 비밀번호 변경 요청
+                - current_password: 현재 비밀번호
+                - new_password: 새 비밀번호
+
+        Returns:
+            dict: 성공 메시지
+
+        Raises:
+            NotFoundException: 사용자를 찾을 수 없는 경우
+            UnauthorizedException: 현재 비밀번호가 일치하지 않는 경우
+            BadRequestException: 새 비밀번호가 현재 비밀번호와 동일한 경우
+        """
+        user = get_or_raise(
+            self.user_model.find_by_id(user_id), "사용자를 찾을 수 없습니다."
+        )
+
+        if user.password != request.current_password:
+            raise UnauthorizedException("현재 비밀번호가 일치하지 않습니다.")
+
+        if request.current_password == request.new_password:
+            raise BadRequestException("새 비밀번호는 현재 비밀번호와 달라야 합니다.")
+
+        self.user_model.update(user_id=user_id, password=request.new_password)
+
+        return {"message": "비밀번호가 성공적으로 변경되었습니다."}
 
     def delete_user(self, user_id: int) -> dict:
         """회원 탈퇴

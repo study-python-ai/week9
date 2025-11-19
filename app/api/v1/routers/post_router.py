@@ -4,7 +4,7 @@ from app.models.post_model import PostModel
 from app.models.user_model import UserModel
 from app.models.comment_model import CommentModel
 from app.dependencies import get_post_model, get_user_model, get_comment_model
-from app.schemas.post_schema import (
+from app.schemas.v1 import (
     CreatePostRequest,
     UpdatePostRequest,
     PostResponse,

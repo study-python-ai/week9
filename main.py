@@ -1,35 +1,58 @@
+import logging
+
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.v1.routers import post_router, user_router
+from app.api.v1.routers import post_router as v1_post_router
+from app.api.v1.routers import user_router as v1_user_router
+from app.api.v2.routers import post_router as v2_post_router
+from app.api.v2.routers import user_router as v2_user_router
 from app.common.exception_handlers import (
     general_exception_handler,
     http_exception_handler,
     validation_exception_handler,
 )
+from app.common.exceptions import ForbiddenException
+from app.middleware.logging_middleware import LoggingMiddleware
 
-app = FastAPI(title="Kakao TASK API", description="Kakao TASK API", version="1.0.0")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+app = FastAPI(
+    title="Kakao TASK API", description="Kakao TASK API API v1/v2", version="2.0.0"
+)
+
+app.add_middleware(LoggingMiddleware)
 
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(ForbiddenException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
-app.include_router(user_router.router)
-app.include_router(post_router.router)
+app.include_router(v1_user_router.router)
+app.include_router(v1_post_router.router)
+
+app.include_router(v2_user_router.router)
+app.include_router(v2_post_router.router)
 
 
 @app.get("/", tags=["root"])
 async def root():
-    """
-        루트 엔드포인트
+    """루트 엔드포인트
 
     Returns:
-
-        dict: 환영 메시지
+        dict: API 정보
     """
-    return {"message": "Kakao TASK API ", "version": "1.0.0", "docs": "/docs"}
+    return {
+        "message": "Kakao TASK API API",
+        "versions": {"v1": "/api/v1", "v2": "/v2"},
+        "docs": "/docs",
+    }
 
 
 if __name__ == "__main__":
